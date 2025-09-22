@@ -6,6 +6,8 @@ import {ReactNode} from 'react';
 
 const font = Libertinus_Sans({
     variable: '--font-libertinus-sans',
+    preload: true,
+    fallback: ['sans-serif'],
     weight: '400',
     subsets: ['latin', 'latin-ext'],
 });
@@ -19,8 +21,8 @@ function Sidebar() {
     function Section({ title, children }: { title: string, children: ReactNode }) {
         return (
             <div>
-                <h3 className='mb-1'>{title}</h3>
-                <div className='flex flex-col'>
+                <h3 className='mb-1 select-none'>{title}</h3>
+                <div className='flex flex-col ml-4'>
                     {children}
                 </div>
             </div>
