@@ -1,9 +1,9 @@
 import {MemberList, Stripe} from '@/app/components';
-import { sql } from 'bun'
 import type {MemberProfile} from '@/app/api';
+import {db} from '@/app/services';
 
 export default async function Page() {
-    const members = await sql`SELECT * FROM members ORDER BY display_name` as MemberProfile[];
+    const members = await db`SELECT * FROM members ORDER BY display_name` as MemberProfile[];
     return (
         <>
             <Stripe>Members</Stripe>
