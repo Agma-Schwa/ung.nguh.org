@@ -4,7 +4,7 @@ import {MemberProfile, NationProfile} from '@/api';
 import {useRef} from 'react';
 import {useAction} from 'next-safe-action/hooks';
 import {AddMemberToNation} from '@/services';
-import {Dialog, ShowError} from '@/components-client';
+import {CheckSuccess, Dialog} from '@/components-client';
 
 export function AddMemberDialog({
     nation,
@@ -17,10 +17,8 @@ export function AddMemberDialog({
     const select = useRef<HTMLSelectElement>(null)
     const { execute, reset } = useAction(AddMemberToNation, {
         onSuccess: ({ data }) => {
-            if (data && 'status' in data && Number(data.status) >= 400) {
-                ShowError(data.message)
-                reset()
-            }
+            CheckSuccess(data)
+            reset()
         }
     })
 

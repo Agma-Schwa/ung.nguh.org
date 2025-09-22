@@ -15,6 +15,7 @@
     "next-safe-action": "^8.0.11",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-hot-toast": "^2.6.0",
     "zod": "^4.1.11"
   },
   "devDependencies": {

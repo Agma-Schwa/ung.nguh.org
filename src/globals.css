@@ -22,3 +22,8 @@ body {
     h3 { font-size: 2rem; }
     a { font-size: 1.2rem; }
 }
+
+.toast {
+    background: var(--color-neutral-600) !important;
+    color: white !important;
+}

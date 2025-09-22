@@ -6,6 +6,7 @@ import React, {ReactNode} from 'react';
 import {auth, signIn} from '@/auth';
 import {GetOwnDiscordProfile} from '@/services';
 import {Member} from '@/components';
+import {Toaster} from 'react-hot-toast';
 
 const font = Noto_Sans({
     preload: true,
@@ -95,6 +96,9 @@ export default function RootLayout({
     return (
         <html lang='en'>
             <body className={`${font.className} antialiased`}>
+                <Toaster position={'top-right'} toastOptions={{
+                    className: 'toast',
+                }} />
                 <Sidebar />
                 <main className='px-20 ml-(--sidebar-width) pb-20'>
                     {children}
