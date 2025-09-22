@@ -1,15 +1,13 @@
 import type {Metadata} from 'next';
-import {Libertinus_Sans} from 'next/font/google';
+import {Noto_Sans} from 'next/font/google';
 import './globals.css';
 import Link from 'next/link';
 import React, {ReactNode} from 'react';
 import {auth, signIn} from '@/auth';
 import {GetOwnDiscordProfile} from '@/app/services';
-import Image from 'next/image';
 import {Member} from '@/app/components';
 
-const font = Libertinus_Sans({
-    variable: '--font-libertinus-sans',
+const font = Noto_Sans({
     preload: true,
     fallback: ['sans-serif'],
     weight: '400',
@@ -97,7 +95,7 @@ export default function RootLayout({
         <html lang='en'>
             <body className={`${font.className} antialiased`}>
                 <Sidebar />
-                <main className='px-20 ml-(--sidebar-width)'>
+                <main className='px-20 ml-(--sidebar-width) pb-20'>
                     {children}
                 </main>
             </body>

@@ -1,5 +1,5 @@
 import {ReactNode, useMemo} from 'react';
-import type {MemberProfile} from '@/app/api';
+import type {MemberProfile, NationPartial, NationProfile} from '@/app/api';
 
 /** A section heading. */
 export function Stripe({ children }: { children: ReactNode }) {
@@ -53,6 +53,46 @@ export function MemberList({
     return (
         <div className='flex flex-col gap-4'>
             {members_sorted.map((m) => <Member key={m.discord_id} member={m}/>)}
+        </div>
+    )
+}
+
+/** A ŋation. */
+export function Nation({
+    nation,
+    member,
+    starred,
+}: {
+    nation: NationPartial,
+    member?: MemberProfile | null,
+    starred?: boolean | null
+}) {
+    return (
+        <div className='flex gap-2 [--width:1.25rem]'>
+            <div className='relative'>
+                <img
+                    src={nation.banner_url!}
+                    className='
+                        select-none rounded-[0_0_var(--width)_var(--width)] w-(--width)
+                        h-[calc(var(--width)*2)]
+                        [outline:1px_solid] outline-neutral-500
+                    '
+                />
+                {member ? <img
+                    src={member.avatar_url}
+                    className='
+                        select-none absolute rounded-[50%]
+                        w-[calc(var(--width)*.875)]
+                        bottom-[calc(var(--width)*.1)]
+                        left-[calc(var(--width)*.06)]
+                    '
+                /> : null}
+            </div>
+            <span className='[font-variant:small-caps] leading-[2rem] text-[2rem] ml-1'>
+                {nation.name}
+                {nation.observer ? <span className='text-[1.5rem]'> 👀️</span> : null}
+                {nation.observer ? <span className='text-[1.5rem]'> ⭐️</span> : null}
+            </span>
         </div>
     )
 }
