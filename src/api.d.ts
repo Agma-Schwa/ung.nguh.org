@@ -11,6 +11,7 @@ export type MemberProfile = {
     active: boolean;
     administrator: boolean;
     staff_only: boolean;
+    ruler?: boolean;
 };
 
 /**
@@ -28,6 +29,7 @@ export type NationPartial = {
  */
 export type NationProfile = {
   id: bigint;
+  active: boolean,
   name: string;
   banner_url: string | null;
   wiki_page_link: string | null;

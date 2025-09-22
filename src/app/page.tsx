@@ -1,4 +1,4 @@
-import {Stripe} from '@/app/components';
+import {Stripe} from '@/components';
 import {auth, signIn} from '@/auth';
 
 export default async function CurrentMeeting() {

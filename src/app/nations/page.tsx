@@ -1,13 +1,16 @@
-import {Nation, Stripe} from '@/app/components';
-import {MemberProfile, NationProfile} from '@/app/api'
-import {db, Me} from '@/app/services';
+import {Nation, Stripe} from '@/components';
+import {MemberProfile, NationProfile} from '@/api'
+import {db, Me} from '@/services';
 import {auth} from '@/auth';
+import Link from 'next/link';
 
 export default async function Page() {
     function List({ nations }: { nations: NationProfile[] }) {
         return (
             <div className='flex flex-col gap-6 mb-12 ml-2'>
-                {nations.map(n => <Nation key={n.id} nation={n} />)}
+                {nations.map(n => <Link key={n.id} href={`/nations/${n.id}`}>
+                    <Nation nation={n} />
+                </Link>)}
             </div>
         )
     }

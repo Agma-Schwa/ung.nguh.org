@@ -1,11 +1,10 @@
 import NextAuth from 'next-auth'
-import type {DefaultSession} from 'next-auth'
 import Discord from 'next-auth/providers/discord';
 
 declare module 'next-auth' {
     interface Session {
         access_token: string | undefined,
-        user: { id: string } & DefaultSession['user']
+        discord_id?: string
     }
 }
 
@@ -34,7 +33,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         async session({token, session}) {
             session.access_token = token.access_token as string
-            session.user.id = token.discord_id as string
+            session.discord_id = token.discord_id as string
             return session
         }
     },

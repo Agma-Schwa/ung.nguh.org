@@ -1,11 +1,11 @@
 import type {Metadata} from 'next';
 import {Noto_Sans} from 'next/font/google';
-import './globals.css';
+import '@/globals.css';
 import Link from 'next/link';
 import React, {ReactNode} from 'react';
 import {auth, signIn} from '@/auth';
-import {GetOwnDiscordProfile} from '@/app/services';
-import {Member} from '@/app/components';
+import {GetOwnDiscordProfile} from '@/services';
+import {Member} from '@/components';
 
 const font = Noto_Sans({
     preload: true,
@@ -44,6 +44,7 @@ async function Sidebar() {
             bg-neutral-800
             border-r border-r-neutral-700
             gap-4 flex flex-col
+            [&_a]:hover:underline
         '>
             <Section title='Meetings'>
                 <Link href='/'>Current Meeting</Link>
