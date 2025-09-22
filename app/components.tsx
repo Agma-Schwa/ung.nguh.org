@@ -11,7 +11,7 @@ export function Stripe({ children }: { children: ReactNode }) {
 }
 
 /** A UŊ member. */
-function Member({
+export function Member({
     member
 }: {
     member: MemberProfile
@@ -21,16 +21,16 @@ function Member({
             <div>
                 <img
                     src={member.avatar_url}
-                    className='w-8 rounded-full select-none'
+                    className='w-8 h-8 rounded-full select-none'
                     alt={member.display_name}
                 />
             </div>
             <div className='leading-8'>
-                <span className={member.active ? "" : "line-through text-gray-500"}>
+                <span className={`select-none ${member.active ? '' : 'line-through text-neutral-500'}`}>
                     {member.display_name}
                 </span>
             </div>
-            {member.administrator ? <span className='select-none'>🛡️</span> : null}
+            {member.administrator ? <span className='select-none -ml-1'>🛡️</span> : null}
         </div>
     )
 }
