@@ -1,8 +1,14 @@
 'use client'
 
-import {ReactNode, useEffect, useRef} from 'react';
-import {createRoot} from 'react-dom/client';
+import React, {createContext, ReactNode, RefObject, useContext, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
+import {twMerge} from 'tailwind-merge';
+
+interface ConfirmDialogState {
+    confirm(prompt: string): Promise<boolean>
+}
+
+export const ConfirmDialogContext = createContext<ConfirmDialogState>({} as any)
 
 export function CheckSuccess(data: any, success_message?: string) {
     if (IsSuccess(data) && success_message)
@@ -24,13 +30,36 @@ export function IsSuccess(data: any): boolean {
     return true
 }
 
+export function Button({
+    className,
+    children,
+    onClick,
+}: {
+    className?: string;
+    children: ReactNode;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            className={twMerge(`
+                text-[1.25rem] bg-neutral-700 px-2
+                cursor-pointer hover:bg-neutral-600
+                transition-[background] duration-300
+            `, className)}
+        >{children}</button>
+    )
+}
+
 /** A dialog. */
 export function Dialog({
+    ref,
     label,
     title,
     buttons,
     children,
 }: {
+    ref?: RefObject<HTMLDialogElement | null>
     label: ReactNode,
     title: ReactNode,
     children?: ReactNode,
@@ -39,17 +68,12 @@ export function Dialog({
         action?: () => any,
     }[]
 }) {
-    const dialog = useRef<HTMLDialogElement>(null)
+    const dialog = ref ?? useRef<HTMLDialogElement>(null)
     return (
         <>
-            <button
-                onClick={() => dialog.current?.showModal()}
-                className='
-                    my-4 text-[1.25rem] bg-neutral-700 px-2
-                    cursor-pointer hover:bg-neutral-600
-                    transition-[background] duration-300
-                '
-            >{label}</button>
+            <Button onClick={() => dialog.current?.showModal()}>
+                {label}
+            </Button>
             <dialog ref={dialog} className={`
                 absolute inset-1/2 -translate-1/2
                 w-[40ch] max-w-[60ch] h-[10rem] text-white
@@ -64,7 +88,8 @@ export function Dialog({
                     </div>
                     <div className='flex flex-row mt-auto justify-around mb-3'>
                         {buttons.map(({ label, action }, index) => <div key={index}>
-                            <button
+                            <Button
+                                className='bg-neutral-600 hover:bg-neutral-500'
                                 onClick={async () => {
                                     if (action) {
                                         const a = action()
@@ -72,16 +97,41 @@ export function Dialog({
                                     }
                                     dialog.current?.close()
                                 }}
-                                className='
-                                    bg-neutral-600 px-2 py-1 w-20
-                                    cursor-pointer hover:bg-neutral-500
-                                    transition-[background] duration-300
-                                '
-                            >{label}</button>
+                            >{label}</Button>
                         </div>)}
                     </div>
                 </div>
             </dialog>
         </>
     )
+}
+
+export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
+    const dialog = useRef<HTMLDialogElement>(null)
+    const [prompt, set_prompt] = useState<string>('')
+    const resolver = useRef<(v: boolean) => void>(() => {})
+    async function Open(msg: string): Promise<boolean> {
+        if (!dialog.current) return Promise.resolve(false)
+        set_prompt(msg)
+        dialog.current.showModal()
+        return new Promise<boolean>((resolve) => { resolver.current = resolve })
+    }
+
+    return (
+        <>
+            <Dialog ref={dialog} label='Warning' title='Warning' buttons={[
+                { label: 'Yes', action: () => resolver.current?.(true) },
+                { label: 'Cancel', action: () => resolver.current?.(false) },
+            ]}>
+                <div>{prompt}</div>
+            </Dialog>
+            <ConfirmDialogContext value={{confirm: Open}} >
+                {children}
+            </ConfirmDialogContext>
+        </>
+    )
+}
+
+export function useConfirm() {
+    return useContext(ConfirmDialogContext)
 }

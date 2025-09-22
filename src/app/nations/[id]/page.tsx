@@ -1,12 +1,14 @@
 import {MemberList, Stripe} from '@/components';
 import {
+    CheckHasEditAccessToNation,
     db,
-    GetAllMembers,
-    GetNation,
+    GetAllMembers, GetLoggedInMemberOrThrow,
+    GetNation, Me,
 } from '@/services';
 import {notFound} from 'next/navigation';
 import {MemberProfile} from '@/api';
-import {AddMemberDialog} from '@/app/nations/[id]/client';
+import {AddMemberDialog, LeaveDialog} from '@/app/nations/[id]/client';
+import {auth} from '@/auth';
 
 export default async function Page({
     params
@@ -29,6 +31,17 @@ export default async function Page({
     const not_members = (await GetAllMembers())
         .filter(m => !members.find(nm => nm.ruler && nm.discord_id === m.discord_id))
 
+    // Get the current user.
+    const me = await Me(await auth())
+
+    // Check if this user can edit or leave this ŋation.
+    let can_edit = me !== null;
+    let can_leave = me !== null && members.find(nm => nm.discord_id === me.discord_id)
+    if (me) {
+        try { await CheckHasEditAccessToNation(me, nation) }
+        catch (_) { can_edit = false }
+    }
+
     return (
         <>
             <Stripe>{nation.name}</Stripe>
@@ -45,7 +58,10 @@ export default async function Page({
             >View Wiki Page</a>}
             <h3 className='my-8 text-left'>Representatives</h3>
             <MemberList members={members} />
-            <AddMemberDialog nation={nation} not_members={not_members} />
+            <div className='flex flex-row mt-8 gap-4 h-8'>
+                { can_edit ?  <AddMemberDialog nation={nation} not_members={not_members} />  : null }
+                { can_leave ? <LeaveDialog nation={nation} me={me!} /> : null }
+            </div>
         </>
     )
 }

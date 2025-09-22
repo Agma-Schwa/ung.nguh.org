@@ -3,8 +3,10 @@
 import {MemberProfile, NationProfile} from '@/api';
 import {useRef} from 'react';
 import {useAction} from 'next-safe-action/hooks';
-import {AddMemberToNation} from '@/services';
-import {CheckSuccess, Dialog} from '@/components-client';
+import {AddMemberToNation, GetLoggedInMemberOrThrow, Me, RemoveMemberFromNation} from '@/services';
+import {Button, CheckSuccess, Dialog, useConfirm} from '@/components-client';
+import toast from 'react-hot-toast';
+import {auth} from '@/auth';
 
 export function AddMemberDialog({
     nation,
@@ -32,24 +34,51 @@ export function AddMemberDialog({
     }
 
     return (
-        <div className='mt-6'>
-            <Dialog
-                label='Add Member'
-                title='Add Member'
-                buttons={[
-                    {label: 'Add', action: Submit},
-                    {label: 'Cancel'},
-                ]}
-            >   <select ref={select} className='bg-neutral-600 m-auto' name='discord_id'>
-                    {not_members.map(m => <option key={m.discord_id} value={String(m.discord_id)}>
-                        {m.display_name}
-                    </option>)}
-                </select>
-                <label className='mx-auto'>
-                    <input ref={checkbox} type='checkbox' name='ruler' className='mr-2' />
-                    Add as ruler
-                </label>
-            </Dialog>
-        </div>
+        <Dialog
+            label='Add Member'
+            title='Add Member'
+            buttons={[
+                {label: 'Add', action: Submit},
+                {label: 'Cancel'},
+            ]}
+        >   <select ref={select} className='bg-neutral-600 m-auto' name='discord_id'>
+                {not_members.map(m => <option key={m.discord_id} value={String(m.discord_id)}>
+                    {m.display_name}
+                </option>)}
+            </select>
+            <label className='mx-auto'>
+                <input ref={checkbox} type='checkbox' name='ruler' className='mr-2' />
+                Add as a ruler
+            </label>
+        </Dialog>
+    )
+}
+
+export function LeaveDialog({
+    me,
+    nation
+}: {
+    me: MemberProfile,
+    nation: NationProfile
+}) {
+    const { confirm } = useConfirm()
+    const { execute, reset } = useAction(RemoveMemberFromNation, {
+        onSuccess: ({ data }) => {
+            CheckSuccess(data)
+            reset()
+        }
+    })
+
+    if (!me) return null
+
+    async function Leave() {
+        if (await confirm('Are you sure you want to leave this ŋation?')) execute({
+            member_to_remove: me.discord_id,
+            nation_id: nation.id
+        })
+    }
+
+    return (
+        <Button onClick={Leave}>Leave</Button>
     )
 }

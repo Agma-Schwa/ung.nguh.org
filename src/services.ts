@@ -4,12 +4,9 @@ import {MemberProfile, NationProfile} from '@/api';
 import {Session} from '@auth/core/types';
 import {SQL} from 'bun';
 import {auth} from '@/auth';
-import {createSafeActionClient, SafeActionFn} from 'next-safe-action';
+import {createSafeActionClient} from 'next-safe-action';
 import {z} from 'zod';
-import {notFound} from 'next/navigation';
 import {revalidatePath} from 'next/cache';
-import {useAction} from 'next-safe-action/hooks';
-
 
 // =============================================================================
 //  Globals and Types
@@ -57,27 +54,95 @@ export const AddMemberToNation = ActionClient.inputSchema(z.object({
     nation_id: z.bigint(),
     ruler: z.boolean(),
 })).action(Wrap(async ({ parsedInput: { member_to_add, nation_id, ruler } }) => {
-    const author = await GetLoggedInMemberOrThrow()
-    const nation = await GetNation(nation_id) ?? BadRequest('Nation not found')
+    const { author, member, nation } = await GetMemberAuthorAndNation(member_to_add, nation_id)
 
     // Ensure that this user can edit this nation.
     await CheckHasEditAccessToNation(author, nation)
 
-    // Ensure that the user we’re trying to add exists.
-    let member = await GetMember(member_to_add) ?? BadRequest('Member not found')
-
     // Staff-only accounts cannot be added to a nation.
     if (member.staff_only) BadRequest('Cannot add this user to a nation')
 
-    // Otherwise, attempt to add them.
+    // Add them.
     const res = await db`
         INSERT OR IGNORE INTO memberships (member, nation, ruler) 
         VALUES (${member.discord_id}, ${nation.id}, ${ruler})
         ON CONFLICT (member, nation)
         DO UPDATE SET ruler = ${ruler}
+        WHERE ruler != ${ruler}
+        RETURNING member
     `
 
-    console.log(res)
+    // If this changed something, and this member has no selected nation to represent,
+    // set this ŋation as the selected ŋation, but only if the nation is not an observer
+    // nation since those can’t vote in the first place.
+    if (res.count && !nation.observer && !member.represented_nation) {
+        await db`
+            UPDATE members
+            SET represented_nation = ${nation.id}
+            WHERE discord_id = ${member.discord_id}
+        `
+    }
+
+    revalidatePath(`/nations/${nation_id}`)
+}))
+
+/** Remove a member from a ŋation. */
+export const RemoveMemberFromNation = ActionClient.inputSchema(z.object({
+    member_to_remove: z.bigint(),
+    nation_id: z.bigint(),
+})).action(Wrap(async ({ parsedInput: { member_to_remove, nation_id } }) => {
+    const { author, member, nation } = await GetMemberAuthorAndNation(member_to_remove, nation_id)
+
+    // A member is always allowed to remove themselves from a nation. If we’re
+    // removing someone else, ensure that this user can edit this nation.
+    if (author.discord_id !== member.discord_id)
+        await CheckHasEditAccessToNation(author, nation)
+
+    // Remove the member.
+    await db.begin(async tx => {
+        const res = await tx`
+            DELETE FROM memberships 
+            WHERE member = ${member.discord_id} 
+            AND nation = ${nation.id}
+            RETURNING member
+        `
+
+        // It’s possible for this to fail if two people attempt to remove
+        // the same member at the same time; give up.
+        if (res.count === 0) return
+
+        // Ok, we removed them as a member. If this is this member’s current
+        // main nation, remove it.
+        await tx`
+            UPDATE members
+            SET represented_nation = NULL
+            WHERE discord_id = ${member.discord_id} 
+            AND represented_nation = ${nation.id}
+        `
+
+        // And if this leaves the ŋation without a ruler, promote a random
+        // member to ruler.
+        const rulers = await One<{value: bigint }>(tx`
+            SELECT COUNT(*) as value FROM memberships 
+            WHERE nation = ${nation.id} AND ruler = TRUE
+        `)
+
+
+        if (rulers?.value === 0n) {
+            // This may return nothing if this nation is out of members.
+            const random_member = await One<{ member: bigint }>(tx`
+                SELECT member FROM memberships WHERE nation = ${nation.id} LIMIT 1
+            `)
+
+            if (random_member?.member) {
+                await tx`
+                    UPDATE memberships SET ruler = TRUE 
+                    WHERE nation = ${nation.id} AND member = ${random_member.member}
+                `
+            }
+        }
+    })
+
     revalidatePath(`/nations/${nation_id}`)
 }))
 
@@ -97,6 +162,13 @@ function Wrap<A extends any[]>(callable: (...args: [...A]) => Promise<any>) {
 // =============================================================================
 //  Action Validation
 // =============================================================================
+async function GetMemberAuthorAndNation(member_to_remove_or_add: bigint, nation_id: bigint) {
+    const author = await GetLoggedInMemberOrThrow()
+    const nation = await GetNation(nation_id) ?? BadRequest('Nation not found')
+    const member = await GetMember(member_to_remove_or_add) ?? BadRequest('Member not found')
+    return {author, member, nation}
+}
+
 async function CheckHasEditAccessToNationImpl(
     member: MemberProfile,
     nation: NationProfile,
@@ -123,14 +195,14 @@ async function CheckHasEditAccessToNationImpl(
         Forbidden()
 }
 
-async function CheckHasEditAccessToNation(
+export async function CheckHasEditAccessToNation(
     member: MemberProfile,
     nation: NationProfile
 ) {
     return CheckHasEditAccessToNationImpl(member, nation, true, true)
 }
 
-async function GetLoggedInMemberOrThrow(): Promise<MemberProfile> {
+export async function GetLoggedInMemberOrThrow(): Promise<MemberProfile> {
     const session = await auth()
     const id = session?.discord_id ?? Unauthorised()
     return await One<MemberProfile>(db`
@@ -142,7 +214,6 @@ async function GetLoggedInMemberOrThrow(): Promise<MemberProfile> {
 // =============================================================================
 //  Data Fetching
 // =============================================================================
-
 export async function GetAllMembers(): Promise<MemberProfile[]> {
     return await db`SELECT * FROM members ORDER BY display_name` as MemberProfile[]
 }

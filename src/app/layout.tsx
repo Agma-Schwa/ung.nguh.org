@@ -7,6 +7,7 @@ import {auth, signIn} from '@/auth';
 import {GetOwnDiscordProfile} from '@/services';
 import {Member} from '@/components';
 import {Toaster} from 'react-hot-toast';
+import {ConfirmDialogProvider} from '@/components-client';
 
 const font = Noto_Sans({
     preload: true,
@@ -99,10 +100,12 @@ export default function RootLayout({
                 <Toaster position={'top-right'} toastOptions={{
                     className: 'toast',
                 }} />
-                <Sidebar />
-                <main className='px-20 ml-(--sidebar-width) pb-20'>
-                    {children}
-                </main>
+                <ConfirmDialogProvider>
+                    <Sidebar />
+                    <main className='px-20 ml-(--sidebar-width) pb-20'>
+                        {children}
+                    </main>
+                </ConfirmDialogProvider>
             </body>
         </html>
     );
