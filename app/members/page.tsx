@@ -1,4 +1,3 @@
-
 import {Stripe} from '@/app/components';
 import { sql } from 'bun'
 import type {MemberProfile} from '@/app/api';
@@ -28,9 +27,7 @@ function Member({
 }
 
 export default async function Page() {
-    'use server';
     const members = await sql`SELECT * FROM members ORDER BY display_name` as MemberProfile[];
-
     return (
         <>
             <Stripe>Members</Stripe>
