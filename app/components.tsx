@@ -68,13 +68,13 @@ export function Nation({
     starred?: boolean | null
 }) {
     return (
-        <div className='flex gap-2 [--width:1.25rem]'>
+        <div className='flex gap-2 [--width:1.25rem] [--height:calc(var(--width)*2)]'>
             <div className='relative'>
                 <img
                     src={nation.banner_url!}
                     className='
                         select-none rounded-[0_0_var(--width)_var(--width)] w-(--width)
-                        h-[calc(var(--width)*2)]
+                        h-(--height)
                         [outline:1px_solid] outline-neutral-500
                     '
                 />
@@ -88,7 +88,9 @@ export function Nation({
                     '
                 /> : null}
             </div>
-            <span className='[font-variant:small-caps] leading-[2rem] text-[2rem] ml-1'>
+            <span className='
+                [font-variant:small-caps] h-(--height) leading-(--height) text-2xl ml-1
+            '>
                 {nation.name}
                 {nation.observer ? <span className='text-[1.5rem]'> 👀️</span> : null}
                 {nation.observer ? <span className='text-[1.5rem]'> ⭐️</span> : null}

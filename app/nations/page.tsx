@@ -14,7 +14,9 @@ export default async function Page() {
                     Active Ŋations: {num_active},
                     Observer Ŋations: {nations.length - num_active}
                 </p>
-                {nations.map(n => <Nation key={n.id} nation={n} />)}
+                <div className='flex flex-col gap-6'>
+                    {nations.map(n => <Nation key={n.id} nation={n} />)}
+                </div>
             </div>
         </>
     )
