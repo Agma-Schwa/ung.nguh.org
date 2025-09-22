@@ -46,7 +46,7 @@ export async function GetOwnDiscordProfile(
 
     let partial = await res.json() as PartialMemberProfile
     return {
-        discord_id: session.user.id,
+        discord_id: BigInt(session.user.id),
         represented_nation: null,
         active: true,
         administrator: false,

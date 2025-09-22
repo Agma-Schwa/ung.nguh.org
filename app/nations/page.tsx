@@ -6,7 +6,7 @@ import {auth} from '@/auth';
 export default async function Page() {
     function List({ nations }: { nations: NationProfile[] }) {
         return (
-            <div className='flex flex-col gap-6 mb-12'>
+            <div className='flex flex-col gap-6 mb-12 ml-2'>
                 {nations.map(n => <Nation key={n.id} nation={n} />)}
             </div>
         )
