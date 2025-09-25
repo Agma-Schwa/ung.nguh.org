@@ -1,4 +1,5 @@
 type Snowflake = bigint
+type bool = bigint;
 
 /**
  * UŊ Member.
@@ -8,10 +9,10 @@ export type MemberProfile = {
     display_name: string;
     avatar_url: string;
     represented_nation: bigint | null;
-    active: boolean;
-    administrator: boolean;
-    staff_only: boolean;
-    ruler?: boolean;
+    active: bool;
+    administrator: bool;
+    staff_only: bool;
+    ruler?: bool;
 };
 
 /**
@@ -21,7 +22,7 @@ export type NationPartial = {
     id?: bigint,
     name: string,
     banner_url: string | null,
-    observer?: boolean,
+    observer?: bool,
 }
 
 /**
@@ -29,12 +30,12 @@ export type NationPartial = {
  */
 export type NationProfile = {
   id: bigint;
-  active: boolean,
+  active: bool,
   name: string;
   banner_url: string | null;
   wiki_page_link: string | null;
   /**
    * An observer ŋation cannot vote and does not count towards quorums.
    */
-  observer: boolean;
+  observer: bool;
 };

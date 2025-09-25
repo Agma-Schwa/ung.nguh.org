@@ -1,16 +1,16 @@
-import {MemberList, Stripe} from '@/components';
+import {Stripe} from '@/components';
 import {
     CheckHasEditAccessToNation,
     db,
-    GetAllMembers, GetLoggedInMemberOrThrow,
+    GetAllMembers,
     GetNation, Me,
 } from '@/services';
 import {notFound} from 'next/navigation';
 import {MemberProfile} from '@/api';
-import {AddMemberDialog, LeaveDialog} from '@/app/nations/[id]/client';
+import {AddMemberDialog, LeaveDialog, NationMemberList} from '@/app/nations/[id]/client';
 import {auth} from '@/auth';
 
-export default async function Page({
+export default async function({
     params
 }: {
     params: Promise<{ id: string }>
@@ -57,7 +57,12 @@ export default async function Page({
                 className='text-center block mt-6 text-2xl'
             >View Wiki Page</a>}
             <h3 className='my-8 text-left'>Representatives</h3>
-            <MemberList members={members} />
+            <NationMemberList
+                can_edit={can_edit}
+                is_admin={!!me?.administrator}
+                nation={nation}
+                members={members}
+            />
             <div className='flex flex-row mt-8 gap-4 h-8'>
                 { can_edit ?  <AddMemberDialog nation={nation} not_members={not_members} />  : null }
                 { can_leave ? <LeaveDialog nation={nation} me={me!} /> : null }

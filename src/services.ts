@@ -146,7 +146,6 @@ export const RemoveMemberFromNation = ActionClient.inputSchema(z.object({
     revalidatePath(`/nations/${nation_id}`)
 }))
 
-
 // This abomination of a function compensates for the fact that NextJS is
 // too stupid to allow us to return errors from actions in a sensible manner.
 function Wrap<A extends any[]>(callable: (...args: [...A]) => Promise<any>) {
@@ -254,9 +253,9 @@ export async function GetOwnDiscordProfile(
     return {
         discord_id: BigInt(session.discord_id),
         represented_nation: null,
-        active: true,
-        administrator: false,
-        staff_only: false,
+        active: 1n,
+        administrator: 0n,
+        staff_only: 0n,
         ...partial
     } satisfies MemberProfile
 }

@@ -1,12 +1,12 @@
 'use client'
 
 import {MemberProfile, NationProfile} from '@/api';
-import {useRef} from 'react';
+import React, {useMemo, useRef} from 'react';
 import {useAction} from 'next-safe-action/hooks';
-import {AddMemberToNation, GetLoggedInMemberOrThrow, Me, RemoveMemberFromNation} from '@/services';
-import {Button, CheckSuccess, Dialog, useConfirm} from '@/components-client';
-import toast from 'react-hot-toast';
-import {auth} from '@/auth';
+import {AddMemberToNation, RemoveMemberFromNation} from '@/services';
+import {Button, CheckSuccess, Dialog, useConfirm, XButton} from '@/components-client';
+import {Member} from '@/components';
+import {SortMembers} from '@/utils';
 
 export function AddMemberDialog({
     nation,
@@ -80,5 +80,45 @@ export function LeaveDialog({
 
     return (
         <Button onClick={Leave}>Leave</Button>
+    )
+}
+
+export function NationMemberList({
+    can_edit,
+    is_admin,
+    nation,
+    members,
+}: {
+    can_edit: boolean,
+    is_admin: boolean,
+    nation: NationProfile,
+    members: MemberProfile[]
+}) {
+    let members_sorted = useMemo(() => SortMembers(members), [members])
+    const { confirm } = useConfirm()
+    const { execute, reset } = useAction(RemoveMemberFromNation, {
+        onSuccess: ({ data }) => {
+            CheckSuccess(data)
+            reset()
+        }
+    })
+
+    async function Remove(member: bigint) {
+        if (await confirm('Are you sure you want to remove this member?')) execute({
+            member_to_remove: member,
+            nation_id: nation.id
+        })
+    }
+
+    return (
+        <div className='flex flex-col gap-4'>
+            {members_sorted.map((m) => <div key={m.discord_id} className='flex flex-row'>
+                {can_edit ? <XButton
+                    enabled={!m.ruler || is_admin}
+                    onClick={() => Remove(m.discord_id)} /> : null
+                }
+                <Member member={m}/>
+            </div>)}
+        </div>
     )
 }

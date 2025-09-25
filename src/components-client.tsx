@@ -51,6 +51,26 @@ export function Button({
     )
 }
 
+/** X Button */
+export function XButton({
+    enabled,
+    onClick,
+}: {
+    enabled: boolean,
+    onClick: () => void
+}) {
+    return (
+        <button
+            onClick={onClick}
+            disabled={!enabled}
+            className={`
+                w-8 h-8 p-0 !bg-transparent enabled:cursor-pointer
+                ${enabled ? "hover:invert transition-[filter]" : "grayscale"}
+            `}
+        >❌</button>
+    )
+}
+
 /** A dialog. */
 export function Dialog({
     ref,

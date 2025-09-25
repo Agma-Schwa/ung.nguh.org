@@ -1,7 +1,7 @@
 import {MemberList, Stripe} from '@/components';
 import {GetAllMembers} from '@/services';
 
-export default async function Page() {
+export default async function() {
     const members = await GetAllMembers()
     return (
         <>

@@ -4,7 +4,7 @@ import {db, Me} from '@/services';
 import {auth} from '@/auth';
 import Link from 'next/link';
 
-export default async function Page() {
+export default async function() {
     function List({ nations }: { nations: NationProfile[] }) {
         return (
             <div className='flex flex-col gap-6 mb-12 ml-2'>
