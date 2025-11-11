@@ -7,7 +7,7 @@ import {
 } from '@/services';
 import {notFound} from 'next/navigation';
 import {MemberProfile} from '@/api';
-import {AddMemberDialog, LeaveDialog, NationMemberList} from '@/app/nations/[id]/client';
+import {AddMemberDialog, DemoteControls, LeaveDialog, NationMemberList} from '@/app/nations/[id]/client';
 import {auth} from '@/auth';
 
 export default async function({
@@ -48,9 +48,13 @@ export default async function({
             <div className='flex'>
                 <img src={nation.banner_url!} className='w-32 mx-auto'/>
             </div>
-            {nation.observer ? <div className='flex justify-center text-2xl mt-8 gap-2'>
+            {nation.observer && !nation.deleted ? <div className='flex justify-center text-2xl mt-8 gap-2'>
                 <em>This ŋation is an observer ŋation</em>
                 <span>👀</span>
+            </div> : null}
+            {nation.deleted ? <div className='flex justify-center text-2xl mt-8 gap-2'>
+                <em>This ŋation has been deleted</em>
+                <span>🪦</span>
             </div> : null}
             {nation.wiki_page_link && <a
                 href={nation.wiki_page_link}
@@ -63,9 +67,10 @@ export default async function({
                 nation={nation}
                 members={members}
             />
-            <div className='flex flex-row mt-8 gap-4 h-8'>
+            <div className='flex flex-row mt-8 gap-4'>
                 { can_edit ?  <AddMemberDialog nation={nation} not_members={not_members} />  : null }
                 { can_leave ? <LeaveDialog nation={nation} me={me!} /> : null }
+                { me ? <DemoteControls nation={nation} can_edit={can_edit} me={me} /> : null }
             </div>
         </>
     )

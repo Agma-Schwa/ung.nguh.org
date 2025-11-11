@@ -23,6 +23,7 @@ export type NationPartial = {
     name: string,
     banner_url: string | null,
     observer?: bool,
+    deleted: bool,
 }
 
 /**
@@ -30,7 +31,6 @@ export type NationPartial = {
  */
 export type NationProfile = {
   id: bigint;
-  active: bool,
   name: string;
   banner_url: string | null;
   wiki_page_link: string | null;
@@ -38,4 +38,5 @@ export type NationProfile = {
    * An observer ŋation cannot vote and does not count towards quorums.
    */
   observer: bool;
+  deleted: bool,
 };

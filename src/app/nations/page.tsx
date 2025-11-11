@@ -21,24 +21,33 @@ export default async function() {
     }
 
     const me = await Me(await auth())
-    const nations = await db`SELECT * FROM nations ORDER BY name` as NationProfile[]
+    const all_nations = await db`SELECT * FROM nations ORDER BY name` as NationProfile[]
     const my_nation_ids = await GetMyNationIds(me)
-    const my_nations = my_nation_ids.map(my => nations.find(n => n.id === my.nation)!)
-    const other_nations = nations.filter(n => !my_nations.includes(n))
-    const num_active = nations.filter(n => !n.observer).length
+    const not_deleted = all_nations.filter(n => !n.deleted)
+    const visible = me?.administrator ? all_nations : not_deleted
+    const my_nations = my_nation_ids.map(my => visible.find(n => n.id === my.nation)!)
+    const other_nations = visible.filter(n => !my_nations.includes(n) && !n.deleted)
+    const num_deleted = all_nations.length - not_deleted.length
+    const num_observer = visible.filter(n => n.observer).length
+    const num_active = all_nations.length - num_deleted - num_observer
     return (
         <>
             <Stripe>Ŋations</Stripe>
             <div>
                 <p className='text-center text-2xl mb-8'>
                     Active Ŋations: {num_active},
-                    Observer Ŋations: {nations.length - num_active}
+                    Observer Ŋations: {num_observer}
+                    {me?.administrator ? `, Deleted Ŋations: ${num_deleted}` : ''}
                 </p>
-                {!me ? <List nations={nations} /> : <div>
+                {!me ? <List nations={visible} /> : <div>
                     <h3 className='mb-6'>My Ŋations</h3>
                     <List nations={my_nations} />
                     <h3 className='mb-6'>Other Ŋations</h3>
                     <List nations={other_nations} />
+                    {me.administrator ? <>
+                        <h3 className='mb-6'>Deleted Ŋations</h3>
+                        <List nations={all_nations.filter(n => n.deleted)} />
+                    </> : null}
                 </div>}
             </div>
         </>

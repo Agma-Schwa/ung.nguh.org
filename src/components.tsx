@@ -85,8 +85,11 @@ export function Nation({
             <span className='
                 [font-variant:small-caps] h-(--height) leading-(--height) text-2xl ml-1
             '>
-                {nation.name}
-                {nation.observer ? <span className='text-[1.5rem]'> 👀️</span> : null}
+                <span className={`select-none ${nation.deleted ? 'line-through text-neutral-500' : ''}`}>
+                    {nation.name}
+                </span>
+                {nation.observer && !nation.deleted ? <span className='text-[1.5rem]'> 👀️</span> : null}
+                {nation.deleted ? <span className='text-[1.5rem]'> 🪦</span> : null}
                 {starred ? <span className='text-[1.5rem]'> ⭐️</span> : null}
             </span>
         </div>

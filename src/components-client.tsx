@@ -1,5 +1,9 @@
 'use client'
 
+//
+// This file is a hard link to ../../common/components-client.tsx
+//
+
 import React, {createContext, ReactNode, RefObject, useContext, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {twMerge} from 'tailwind-merge';
@@ -33,19 +37,32 @@ export function IsSuccess(data: any): boolean {
 export function Button({
     className,
     children,
+    disabled,
     onClick,
+    danger,
+    hidden,
 }: {
-    className?: string;
-    children: ReactNode;
-    onClick: () => void;
+    className?: string,
+    disabled?: boolean,
+    children: ReactNode,
+    onClick: () => void,
+    danger?: boolean,
+    hidden?: boolean,
 }) {
     return (
         <button
             onClick={onClick}
+            disabled={disabled}
             className={twMerge(`
-                text-[1.25rem] bg-neutral-700 px-2
-                cursor-pointer hover:bg-neutral-600
-                transition-[background] duration-300
+                text-(size:--text-size)
+                height-(--text-size)
+                block
+                px-2 transition-[background] duration-300 select-none
+
+                enabled:cursor-pointer 
+                ${danger ? 'bg-rose-800 hover:bg-rose-700' : 'bg-neutral-700 hover:bg-neutral-600'} 
+                ${danger ? 'disabled:bg-rose-400' : 'disabled:bg-neutral-400'}
+                ${hidden ? 'hidden' : ''} 
             `, className)}
         >{children}</button>
     )
@@ -78,28 +95,34 @@ export function Dialog({
     title,
     buttons,
     children,
+    hide_open_button,
 }: {
     ref?: RefObject<HTMLDialogElement | null>
     label: ReactNode,
     title: ReactNode,
     children?: ReactNode,
+    hide_open_button?: boolean,
     buttons: {
         label: ReactNode,
+        disabled?: boolean,
         action?: () => any,
     }[]
 }) {
-    const dialog = ref ?? useRef<HTMLDialogElement>(null)
+    const local_ref = useRef<HTMLDialogElement>(null)
+    const dialog = ref ?? local_ref
     return (
         <>
-            <Button onClick={() => dialog.current?.showModal()}>
-                {label}
-            </Button>
+            <div className={hide_open_button ? 'hidden' : ''}>
+                <Button onClick={() => dialog.current?.showModal()}>
+                    {label}
+                </Button>
+            </div>
             <dialog ref={dialog} className={`
                 absolute inset-1/2 -translate-1/2
-                w-[40ch] max-w-[60ch] h-[10rem] text-white
+                w-[40ch] max-w-[60ch] min-h-[10rem] text-white
                 open:flex flex-col bg-neutral-700
             `}>
-                <div className='w-full text-[1.25rem] text-center bg-neutral-600'>
+                <div className='w-full text-(size:--text-size) text-center bg-neutral-600 select-none'>
                     {title}
                 </div>
                 <div className='flex flex-col h-full'>
@@ -107,9 +130,10 @@ export function Dialog({
                         {children}
                     </div>
                     <div className='flex flex-row mt-auto justify-around mb-3'>
-                        {buttons.map(({ label, action }, index) => <div key={index}>
+                        {buttons.map(({ label, disabled, action }, index) => <div key={index}>
                             <Button
                                 className='bg-neutral-600 hover:bg-neutral-500'
+                                disabled={disabled}
                                 onClick={async () => {
                                     if (action) {
                                         const a = action()
@@ -126,6 +150,29 @@ export function Dialog({
     )
 }
 
+/** Single-line text input control. */
+export function TextInput({
+    ref,
+    onChange,
+    onEnter,
+    className,
+}: {
+    ref?: RefObject<HTMLInputElement | null>
+    onChange: (value: string) => void,
+    onEnter?: () => void,
+    className?: string
+}) {
+    return <input
+        ref={ref}
+        type='text'
+        className={twMerge('border border-neutral-500 bg-neutral-700 px-1', className)}
+        onChange={(event) => onChange(event.target.value)}
+        onKeyDownCapture={!onEnter ? undefined : (event) => {
+            if (event.key === 'Enter') onEnter()
+        }}
+    />
+}
+
 export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
     const dialog = useRef<HTMLDialogElement>(null)
     const [prompt, set_prompt] = useState<string>('')
@@ -139,7 +186,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
 
     return (
         <>
-            <Dialog ref={dialog} label='Warning' title='Warning' buttons={[
+            <Dialog hide_open_button={true} ref={dialog} label='Warning' title='Warning' buttons={[
                 { label: 'Yes', action: () => resolver.current?.(true) },
                 { label: 'Cancel', action: () => resolver.current?.(false) },
             ]}>

@@ -3,7 +3,7 @@
 import {MemberProfile, NationProfile} from '@/api';
 import React, {useMemo, useRef} from 'react';
 import {useAction} from 'next-safe-action/hooks';
-import {AddMemberToNation, RemoveMemberFromNation} from '@/services';
+import {AddMemberToNation, RemoveMemberFromNation, SetNationStatus} from '@/services';
 import {Button, CheckSuccess, Dialog, useConfirm, XButton} from '@/components-client';
 import {Member} from '@/components';
 import {SortMembers} from '@/utils';
@@ -51,6 +51,61 @@ export function AddMemberDialog({
                 Add as a ruler
             </label>
         </Dialog>
+    )
+}
+
+export function DemoteControls({
+    nation,
+    can_edit,
+    me
+}: {
+    nation: NationProfile,
+    can_edit: boolean,
+    me: MemberProfile
+}) {
+    const { confirm } = useConfirm();
+    const { execute, reset } = useAction(SetNationStatus, {
+        onSuccess: ({ data }) => {
+            CheckSuccess(data)
+            reset()
+        }
+    })
+
+    async function DemoteToObserver() {
+        if (await confirm(nation.observer
+            ? "Promote this ŋation from an observer ŋation?"
+            : "Demote this ŋation to an observer ŋation?"
+        )) {
+            execute({
+                nation_id: nation.id,
+                observer: true,
+                value: !nation.observer
+            })
+        }
+    }
+
+    async function MarkAsDeleted() {
+        if (await confirm(nation.deleted
+            ? "Restore this ŋation?"
+            : "Mark this ŋation as deleted?"
+        )) {
+            execute({
+                nation_id: nation.id,
+                observer: false,
+                value: !nation.deleted
+            })
+        }
+    }
+
+    return (
+        <>
+            {can_edit ? <Button onClick={DemoteToObserver} danger={!nation.observer}>
+                {nation.observer ? 'Promote from' : 'Demote to'} Observer
+            </Button> : null}
+            {me.administrator ? <Button onClick={MarkAsDeleted} danger={!nation.deleted}>
+                {nation.deleted ? 'Undelete' : 'Delete'} Nation
+            </Button> : null}
+        </>
     )
 }
 

@@ -146,6 +146,46 @@ export const RemoveMemberFromNation = ActionClient.inputSchema(z.object({
     revalidatePath(`/nations/${nation_id}`)
 }))
 
+/** Demote a nation or mark it as deleted. */
+export const SetNationStatus = ActionClient.inputSchema(z.object({
+    nation_id: z.bigint(),
+    observer: z.boolean(),
+    value: z.boolean(),
+})).action(Wrap(async ({ parsedInput: { nation_id, observer, value } }) => {
+    const session = await auth()
+    const me = await Me(session)
+    const nation = await GetNation(nation_id)
+    if (!me || !nation) BadRequest()
+
+    // Any ruler may toggle observer status, but only admins can mark
+    // a nation as deleted.
+    if (observer) {
+        await CheckHasEditAccessToNation(me, nation)
+    } else {
+        if (!me.administrator) Forbidden()
+    }
+
+    await db.begin(async tx => {
+        // Set observer status.
+        if (observer) {
+            await tx`UPDATE nations SET observer = ${value} WHERE id = ${nation_id}`
+        } else {
+            await tx`UPDATE nations SET deleted = ${value} WHERE id = ${nation_id}`
+        }
+
+        // If this enables observer status, unselect this nation as the represented
+        // nation for all of its members.
+        if (value) await tx`
+            UPDATE members 
+            SET represented_nation = NULL 
+            WHERE represented_nation = ${nation_id}
+        `
+    })
+
+    revalidatePath('/nations')
+    revalidatePath(`/nations/${nation_id}`)
+}))
+
 // This abomination of a function compensates for the fact that NextJS is
 // too stupid to allow us to return errors from actions in a sensible manner.
 function Wrap<A extends any[]>(callable: (...args: [...A]) => Promise<any>) {
@@ -178,7 +218,7 @@ async function CheckHasEditAccessToNationImpl(
     if (member.administrator && allow_admins) return
 
     // Inactive nations cannot be altered.
-    if (!nation.active) Forbidden('Nation is locked')
+    if (!nation.deleted) Forbidden('Nation is locked')
 
     // Otherwise, only representatives can vote for a nation.
     const { ruler } = await One<{ruler: boolean}>(db`
