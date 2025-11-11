@@ -40,3 +40,37 @@ export type NationProfile = {
   observer: bool;
   deleted: bool,
 };
+
+/**
+ * The type of a motion.
+ */
+export const MotionType = {
+    Unsure: 0n,
+    Legislative: 1n,
+    Executive: 2n,
+    Constitutional: 3n
+} as const
+
+/**
+ * UŊ Motion.
+ */
+export type Motion = {
+  id: bigint;
+  text: string;
+  author: Snowflake;
+  type: 0n | 1n | 2n | 3n;
+  title: string;
+  meeting?: bigint;
+  quorum: bigint;
+  locked: bool;
+  closed: bool;
+  supported: bool;
+  passed: bool;
+  enabled: bool;
+};
+
+/** UŊ Meeting. */
+export type Meeting = {
+    id: bigint;
+    name: string;
+}

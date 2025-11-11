@@ -21,7 +21,7 @@ body {
 @layer base {
     h2 { font-size: 3rem; }
     h3 { font-size: 2rem; }
-    a { font-size: 1.2rem; }
+    a:hover { text-decoration: underline; }
     body { font-size: var(--text-size); }
 }
 

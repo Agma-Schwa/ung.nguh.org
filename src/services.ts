@@ -1,12 +1,13 @@
 'use server'
 
-import {MemberProfile, NationProfile} from '@/api';
+import {Meeting, MemberProfile, Motion, NationProfile} from '@/api';
 import {Session} from '@auth/core/types';
 import {SQL} from 'bun';
 import {auth} from '@/auth';
 import {createSafeActionClient} from 'next-safe-action';
 import {z} from 'zod';
 import {revalidatePath} from 'next/cache';
+import {notFound} from 'next/navigation';
 
 // =============================================================================
 //  Globals and Types
@@ -167,6 +168,29 @@ export const RemoveMemberFromNation = ActionClient.inputSchema(z.object({
     revalidatePath(`/nations/${nation_id}`)
 }))
 
+/** Schedule a motion for a meeting (0 = no meeting). */
+export const ScheduleMotion = ActionClient.inputSchema(z.object({
+    motion_id: z.bigint(),
+    meeting_id: z.bigint()
+})).action(Wrap(async ({ parsedInput: { motion_id, meeting_id } }) => {
+    await GetLoggedInMemberOrThrow()
+    const motion = await GetMotionOrThrow(motion_id)
+    const meeting = meeting_id !== 0n ? await GetMeetingOrThrow(meeting_id) : null
+    if (motion.closed) BadRequest("Motion already closed")
+
+    // Clear the meeting if null was passed, else set it to the meeting’s ID.
+    if (meeting) {
+        await db`UPDATE motions SET meeting = ${meeting.id} WHERE id = ${motion.id}`
+    } else {
+        await db`UPDATE motions SET meeting = NULL WHERE id = ${motion.id}`
+    }
+
+    revalidatePath('/motions')
+    revalidatePath(`/motion/${motion.id}`)
+    if (motion.meeting) revalidatePath(`/meeting/${motion.meeting}`)
+    if (meeting) revalidatePath(`/meeting/${meeting.id}`)
+}))
+
 /** Demote a nation or mark it as deleted. */
 export const SetNationStatus = ActionClient.inputSchema(z.object({
     nation_id: z.bigint(),
@@ -271,6 +295,20 @@ export async function GetLoggedInMemberOrThrow(): Promise<MemberProfile> {
     return await GetMember(BigInt(id)) ?? Unauthorised()
 }
 
+export async function GetMeetingOrThrow(id: bigint): Promise<Meeting> {
+    return await One<Meeting>(db`
+        SELECT * FROM meetings
+        WHERE id = ${id} LIMIT 1
+    `) ?? notFound()
+}
+
+export async function GetMotionOrThrow(id: bigint): Promise<Motion> {
+    return await One<Motion>(db`
+        SELECT * FROM motions
+        WHERE id = ${id} LIMIT 1
+    `) ?? notFound()
+}
+
 // =============================================================================
 //  Data Fetching
 // =============================================================================
@@ -287,9 +325,9 @@ export async function GetMember(id: bigint): Promise<MemberProfile | null> {
 
 export async function GetNation(id: bigint): Promise<NationProfile | null> {
     return One<NationProfile>(db`
-        SELECT * FROM nations 
-        WHERE id = ${id} LIMIT 1`
-    )
+        SELECT * FROM nations
+        WHERE id = ${id} LIMIT 1
+    `)
 }
 
 export async function GetOwnDiscordProfile(

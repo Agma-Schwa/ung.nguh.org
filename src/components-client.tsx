@@ -162,7 +162,7 @@ export function Dialog({
                     <div className='flex flex-row mt-auto justify-around mb-3'>
                         {buttons.map(({ label, disabled, action }, index) => <div key={index}>
                             <Button
-                                className='bg-neutral-600 hover:bg-neutral-500'
+                                className='bg-neutral-600 hover:bg-neutral-500 min-w-[7ch]'
                                 disabled={disabled}
                                 onClick={async () => {
                                     if (action) {

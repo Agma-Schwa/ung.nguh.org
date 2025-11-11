@@ -31,7 +31,7 @@ async function Sidebar() {
         return (
             <div className='pl-4'>
                 <h3 className='mb-1 select-none'>{title}</h3>
-                <div className='flex flex-col ml-4'>
+                <div className='flex flex-col ml-4 [&>*]:text-[1.2rem]'>
                     {children}
                 </div>
             </div>
@@ -46,7 +46,6 @@ async function Sidebar() {
             bg-neutral-800
             border-r border-r-neutral-700
             gap-4 flex flex-col
-            [&_a]:hover:underline
         '>
             <Section title='Meetings'>
                 <Link href='/'>Current Meeting</Link>
