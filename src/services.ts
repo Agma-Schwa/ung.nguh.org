@@ -296,10 +296,7 @@ export async function GetLoggedInMemberOrThrow(): Promise<MemberProfile> {
 }
 
 export async function GetMeetingOrThrow(id: bigint): Promise<Meeting> {
-    return await One<Meeting>(db`
-        SELECT * FROM meetings
-        WHERE id = ${id} LIMIT 1
-    `) ?? notFound()
+    return await GetMeeting(id) ?? notFound()
 }
 
 export async function GetMotionOrThrow(id: bigint): Promise<Motion> {
@@ -316,10 +313,21 @@ export async function GetAllMembers(): Promise<MemberProfile[]> {
     return await db`SELECT * FROM members ORDER BY display_name` as MemberProfile[]
 }
 
+export async function GetAllNations(): Promise<NationProfile[]> {
+    return await db`SELECT * FROM nations ORDER BY name` as NationProfile[]
+}
+
 export async function GetMember(id: bigint): Promise<MemberProfile | null> {
     return One<MemberProfile>(db`
         SELECT * FROM members WHERE 
         discord_id = ${id} LIMIT 1
+    `)
+}
+
+export async function GetMeeting(id: bigint): Promise<Meeting | null> {
+    return One<Meeting>(db`
+        SELECT * FROM meetings
+        WHERE id = ${id} LIMIT 1
     `)
 }
 

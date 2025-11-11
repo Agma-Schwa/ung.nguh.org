@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {Fragment} from 'react';
 import {ScheduleMotionButton} from '@/app/motions/client';
 
-function GetType(motion: Motion) {
+export function FormatMotionType(motion: Motion) {
     switch (motion.type) {
         case MotionType.Constitutional: return 'cons'
         case MotionType.Executive: return 'exec'
@@ -14,7 +14,7 @@ function GetType(motion: Motion) {
     }
 }
 
-function GetEmoji(m: Motion) {
+export function GetMotionEmoji(m: Motion) {
     if (m.supported || (m.passed && m.type !== MotionType.Constitutional)) return ' ✅'
     if (m.passed) return ' ⌛'
     if (m.closed) return ' ❌'
@@ -38,13 +38,13 @@ export async function MotionList({
             {motions.map((motion) => {
                 const member = members.find(m => m.discord_id === motion.author)!
                 const meeting = meetings.find(m => m.id === motion.meeting)
-                const type = GetType(motion)
+                const type = FormatMotionType(motion)
                 return <Fragment key={motion.id}>
                     <div><Member member={member}/></div>
                     <div><Link href={`/motions/${motion.id}`}>
                         <span className={`${motion.closed ? 'line-through text-neutral-500' : ''}`}>{motion.title}</span>
                         <span className='[font-variant:small-caps] text-neutral-300'> [{type}]</span>
-                        <span>{GetEmoji(motion)}</span>
+                        <span>{GetMotionEmoji(motion)}</span>
                     </Link></div>
                     <div className='flex gap-2 justify-end'>
                         <span> {

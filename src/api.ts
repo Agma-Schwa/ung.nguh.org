@@ -74,3 +74,10 @@ export type Meeting = {
     id: bigint;
     name: string;
 }
+
+export type Vote = {
+    motion: bigint;
+    member: bigint;
+    nation: bigint;
+    vote: bool;
+}
