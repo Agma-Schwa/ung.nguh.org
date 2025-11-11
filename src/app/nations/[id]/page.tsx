@@ -46,7 +46,7 @@ export default async function({
         <>
             <Stripe>{nation.name}</Stripe>
             <div className='flex'>
-                <img src={nation.banner_url!} className='w-32 mx-auto'/>
+                <img src={URL.canParse(nation.banner_url ?? '') ? nation.banner_url! : null!} className='w-32 mx-auto'/>
             </div>
             {nation.observer && !nation.deleted ? <div className='flex justify-center text-2xl mt-8 gap-2'>
                 <em>This ŋation is an observer ŋation</em>

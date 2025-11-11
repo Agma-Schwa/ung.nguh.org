@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS nations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    active INTEGER NOT NULL DEFAULT TRUE, -- Inactive countries can't do anything.
+    deleted INTEGER NOT NULL DEFAULT FALSE, -- Deleted countries can't do anything.
     observer INTEGER NOT NULL DEFAULT FALSE, -- Whether this is an observer ŋation.
     name TEXT NOT NULL,
     banner_url TEXT,

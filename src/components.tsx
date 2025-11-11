@@ -65,7 +65,7 @@ export function Nation({
         <div className='flex gap-2 [--width:1.25rem] [--height:calc(var(--width)*2)]'>
             <div className='relative'>
                 <img
-                    src={nation.banner_url!}
+                    src={URL.canParse(nation.banner_url ?? '') ? nation.banner_url! : null!}
                     className='
                         select-none rounded-[0_0_var(--width)_var(--width)] w-(--width)
                         h-(--height)
