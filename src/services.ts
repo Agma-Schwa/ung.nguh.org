@@ -86,6 +86,27 @@ export const AddMemberToNation = ActionClient.inputSchema(z.object({
     revalidatePath(`/nations/${nation_id}`)
 }))
 
+/** Edit a ŋation. */
+export const EditŊation = ActionClient.inputSchema(z.object({
+    nation_id: z.bigint(),
+    name: z.string().min(1).max(200),
+    banner_url: z.string().max(6000),
+    wiki_page_link: z.string().max(6000)
+})).action(Wrap(async ({ parsedInput: { nation_id, name, banner_url, wiki_page_link } }) => {
+    const { me, nation } = await GetMeAndNation(nation_id)
+    await CheckHasEditAccessToNation(me, nation)
+    await db`
+        UPDATE nations 
+        SET name = ${name},
+            banner_url = ${banner_url},
+            wiki_page_link = ${wiki_page_link}
+        WHERE id = ${nation_id}
+    `
+    revalidatePath('/nations')
+    revalidatePath(`/nations/${nation_id}`)
+    revalidatePath(`/nations/${nation_id}/edit`)
+}))
+
 /** Remove a member from a ŋation. */
 export const RemoveMemberFromNation = ActionClient.inputSchema(z.object({
     member_to_remove: z.bigint(),
@@ -152,10 +173,7 @@ export const SetNationStatus = ActionClient.inputSchema(z.object({
     observer: z.boolean(),
     value: z.boolean(),
 })).action(Wrap(async ({ parsedInput: { nation_id, observer, value } }) => {
-    const session = await auth()
-    const me = await Me(session)
-    const nation = await GetNation(nation_id)
-    if (!me || !nation) BadRequest()
+    const { me, nation } = await GetMeAndNation(nation_id)
 
     // Any ruler may toggle observer status, but only admins can mark
     // a nation as deleted.
@@ -176,8 +194,8 @@ export const SetNationStatus = ActionClient.inputSchema(z.object({
         // If this enables observer status, unselect this nation as the represented
         // nation for all of its members.
         if (value) await tx`
-            UPDATE members 
-            SET represented_nation = NULL 
+            UPDATE members
+            SET represented_nation = NULL
             WHERE represented_nation = ${nation_id}
         `
     })
@@ -208,7 +226,13 @@ async function GetMemberAuthorAndNation(member_to_remove_or_add: bigint, nation_
     return {author, member, nation}
 }
 
-async function CheckHasEditAccessToNationImpl(
+async function GetMeAndNation(nation_id: bigint) {
+    const me = await GetLoggedInMemberOrThrow()
+    const nation = await GetNation(nation_id) ?? BadRequest('Nation not found')
+    return {me, nation}
+}
+
+async function CheckHasAccessToNationImpl(
     member: MemberProfile,
     nation: NationProfile,
     require_edit_access: boolean,
@@ -218,12 +242,12 @@ async function CheckHasEditAccessToNationImpl(
     if (member.administrator && allow_admins) return
 
     // Inactive nations cannot be altered.
-    if (!nation.deleted) Forbidden('Nation is locked')
+    if (nation.deleted) Forbidden('Cannot edit deleted nation')
 
     // Otherwise, only representatives can vote for a nation.
     const { ruler } = await One<{ruler: boolean}>(db`
-        SELECT ruler FROM memberships 
-        WHERE member = ${member.discord_id} 
+        SELECT ruler FROM memberships
+        WHERE member = ${member.discord_id}
         AND nation = ${nation.id}
         LIMIT 1
     `) ?? Forbidden()
@@ -238,16 +262,13 @@ export async function CheckHasEditAccessToNation(
     member: MemberProfile,
     nation: NationProfile
 ) {
-    return CheckHasEditAccessToNationImpl(member, nation, true, true)
+    return CheckHasAccessToNationImpl(member, nation, true, true)
 }
 
 export async function GetLoggedInMemberOrThrow(): Promise<MemberProfile> {
     const session = await auth()
     const id = session?.discord_id ?? Unauthorised()
-    return await One<MemberProfile>(db`
-        SELECT * FROM members WHERE 
-        discord_id = ${id} LIMIT 1`
-    ) ?? Unauthorised()
+    return await GetMember(BigInt(id)) ?? Unauthorised()
 }
 
 // =============================================================================

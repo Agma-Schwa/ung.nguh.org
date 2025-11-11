@@ -7,7 +7,7 @@ import {
 } from '@/services';
 import {notFound} from 'next/navigation';
 import {MemberProfile} from '@/api';
-import {AddMemberDialog, DemoteControls, LeaveDialog, NationMemberList} from '@/app/nations/[id]/client';
+import {AddMemberDialog, DemoteControls, EditButton, LeaveDialog, NationMemberList} from '@/app/nations/[id]/client';
 import {auth} from '@/auth';
 
 export default async function({
@@ -69,6 +69,7 @@ export default async function({
             />
             <div className='flex flex-row mt-8 gap-4'>
                 { can_edit ?  <AddMemberDialog nation={nation} not_members={not_members} />  : null }
+                { can_edit ? <EditButton id={nation.id} /> : null }
                 { can_leave ? <LeaveDialog nation={nation} me={me!} /> : null }
                 { me ? <DemoteControls nation={nation} can_edit={can_edit} me={me} /> : null }
             </div>

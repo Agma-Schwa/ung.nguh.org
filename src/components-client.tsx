@@ -7,6 +7,8 @@
 import React, {createContext, ReactNode, RefObject, useContext, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {twMerge} from 'tailwind-merge';
+import z from 'zod';
+import {HookSafeActionFn, useAction} from 'next-safe-action/hooks';
 
 interface ConfirmDialogState {
     confirm(prompt: string): Promise<boolean>
@@ -17,6 +19,34 @@ export const ConfirmDialogContext = createContext<ConfirmDialogState>({} as any)
 export function CheckSuccess(data: any, success_message?: string) {
     if (IsSuccess(data) && success_message)
         toast.success(success_message)
+}
+
+/** Wrapper around useAction() that actually reports errors to the user. */
+export function useActionChecked<
+    ServerError,
+    S extends z.Schema,
+    CVE,
+    Data,
+>(
+    action: HookSafeActionFn<ServerError, S, CVE, Data>,
+    onSuccess?: () => void
+) : (input: z.input<S>) => void {
+    const { execute, reset } = useAction(action, {
+        onSuccess: ({ data }) => {
+            CheckSuccess(data)
+            reset()
+            onSuccess?.()
+        },
+        onError: (e) => {
+            console.error(e)
+            toast.error('Invalid form data')
+            reset()
+        }
+    })
+
+    // Don’t know how to write a proper type for this, but type checking
+    // at the call site works, and that’s all I care about.
+    return execute as any
 }
 
 export function IsSuccess(data: any): boolean {
@@ -153,18 +183,23 @@ export function Dialog({
 /** Single-line text input control. */
 export function TextInput({
     ref,
+    initialValue,
     onChange,
     onEnter,
     className,
+    type,
 }: {
     ref?: RefObject<HTMLInputElement | null>
+    initialValue?: string
     onChange: (value: string) => void,
     onEnter?: () => void,
     className?: string
+    type?: string
 }) {
     return <input
         ref={ref}
-        type='text'
+        type={type ? type : 'text'}
+        defaultValue={initialValue}
         className={twMerge('border border-neutral-500 bg-neutral-700 px-1', className)}
         onChange={(event) => onChange(event.target.value)}
         onKeyDownCapture={!onEnter ? undefined : (event) => {

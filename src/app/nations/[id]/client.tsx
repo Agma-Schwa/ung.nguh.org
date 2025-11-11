@@ -2,11 +2,11 @@
 
 import {MemberProfile, NationProfile} from '@/api';
 import React, {useMemo, useRef} from 'react';
-import {useAction} from 'next-safe-action/hooks';
 import {AddMemberToNation, RemoveMemberFromNation, SetNationStatus} from '@/services';
-import {Button, CheckSuccess, Dialog, useConfirm, XButton} from '@/components-client';
+import {Button, Dialog, useActionChecked, useConfirm, XButton} from '@/components-client';
 import {Member} from '@/components';
 import {SortMembers} from '@/utils';
+import {useRouter} from 'next/navigation';
 
 export function AddMemberDialog({
     nation,
@@ -17,12 +17,7 @@ export function AddMemberDialog({
 }) {
     const checkbox = useRef<HTMLInputElement>(null)
     const select = useRef<HTMLSelectElement>(null)
-    const { execute, reset } = useAction(AddMemberToNation, {
-        onSuccess: ({ data }) => {
-            CheckSuccess(data)
-            reset()
-        }
-    })
+    const execute = useActionChecked(AddMemberToNation)
 
     function Submit() {
         if (!checkbox.current || !select.current) return
@@ -64,12 +59,7 @@ export function DemoteControls({
     me: MemberProfile
 }) {
     const { confirm } = useConfirm();
-    const { execute, reset } = useAction(SetNationStatus, {
-        onSuccess: ({ data }) => {
-            CheckSuccess(data)
-            reset()
-        }
-    })
+    const execute = useActionChecked(SetNationStatus)
 
     async function DemoteToObserver() {
         if (await confirm(nation.observer
@@ -109,6 +99,15 @@ export function DemoteControls({
     )
 }
 
+export function EditButton({ id }: { id: bigint }) {
+    const router = useRouter()
+    function Edit() {
+        router.push(`/nations/${id}/edit`)
+    }
+
+    return <Button onClick={Edit}>Edit Ŋation</Button>
+}
+
 export function LeaveDialog({
     me,
     nation
@@ -117,12 +116,7 @@ export function LeaveDialog({
     nation: NationProfile
 }) {
     const { confirm } = useConfirm()
-    const { execute, reset } = useAction(RemoveMemberFromNation, {
-        onSuccess: ({ data }) => {
-            CheckSuccess(data)
-            reset()
-        }
-    })
+    const execute = useActionChecked(RemoveMemberFromNation)
 
     if (!me) return null
 
@@ -151,12 +145,7 @@ export function NationMemberList({
 }) {
     let members_sorted = useMemo(() => SortMembers(members), [members])
     const { confirm } = useConfirm()
-    const { execute, reset } = useAction(RemoveMemberFromNation, {
-        onSuccess: ({ data }) => {
-            CheckSuccess(data)
-            reset()
-        }
-    })
+    const execute = useActionChecked(RemoveMemberFromNation)
 
     async function Remove(member: bigint) {
         if (await confirm('Are you sure you want to remove this member?')) execute({
@@ -167,7 +156,7 @@ export function NationMemberList({
 
     return (
         <div className='flex flex-col gap-4'>
-            {members_sorted.map((m) => <div key={m.discord_id} className='flex flex-row'>
+            {members_sorted.map((m) => <div key={m.discord_id} className='flex flex-row gap-2'>
                 {can_edit ? <XButton
                     enabled={!m.ruler || is_admin}
                     onClick={() => Remove(m.discord_id)} /> : null
