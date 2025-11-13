@@ -51,6 +51,12 @@ export const MotionType = {
     Constitutional: 3n
 } as const
 
+/** Persistent global variables. */
+export const GlobalVar = {
+    /** The Id of the active meeting. */
+    ActiveMeeting: 0n,
+} as const
+
 /**
  * UŊ Motion.
  */

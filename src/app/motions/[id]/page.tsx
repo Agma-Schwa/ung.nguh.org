@@ -1,10 +1,20 @@
 import {Member, Nation, Stripe} from '@/components';
-import {db, GetAllMembers, GetAllNations, GetMeeting, GetMeetingOrThrow, GetMember, GetMotionOrThrow} from '@/services';
+import {
+    db, GetActiveMeeting,
+    GetAllMembers,
+    GetAllNations,
+    GetMeeting,
+    GetMember,
+    GetMotionOrThrow,
+    Me
+} from '@/services';
 import {notFound} from 'next/navigation';
 import {FormatMotionType, GetMotionEmoji} from '@/app/motions/motion';
 import {Motion, MotionType, Vote} from '@/api';
 import {Fragment} from 'react';
 import Markdown from 'react-markdown';
+import {auth} from '@/auth';
+import {MotionButtons} from '@/app/motions/[id]/client';
 
 function FormatMotionStatus(motion: Motion) {
     if (!motion.passed)
@@ -23,8 +33,11 @@ export default async function({
 }) {
     const { id } = await params
     try { BigInt(id); } catch (e) { notFound() }
+    const session = await auth()
+    const me = await Me(session)
     const motion = await GetMotionOrThrow(BigInt(id))
     const member = await GetMember(motion.author) ?? notFound()
+    const active = await GetActiveMeeting()
     const meeting = motion.meeting ? await GetMeeting(motion.meeting) : null
     const votes = await db`SELECT * FROM votes WHERE motion = ${motion.id}` as Vote[];
     const ayes = votes.filter(v => v.vote);
@@ -69,10 +82,17 @@ export default async function({
             <div className='
                 mt-8
                 [&>ol]:list-decimal [&>ul]:list-image-[url("/fleur-de-lis.svg")]
-                [&>ol,ul]:list-inside [&>ol,ul]:ml-8 [&>ol,ul]:my-4 [&_p+p]:mt-4
+                [&>ol,ul]:ml-12 [&>ol,ul]:my-4
+                [&_h1,h2,h3,h4,h5]:mt-8 [&_h3]:mt-6 [&_h3]:mb-2 [&_h4]:mt-6 [&_h4]:mb-2
+                [&_p+p]:mt-4
             '><Markdown>{motion.text}</Markdown></div>
 
-            {/*TODO: All of the motion controls and dialogs. */}
+            <MotionButtons
+                me={me}
+                motion={motion}
+                active_meeting={active}
+                has_votes={votes.length !== 0}
+            />
         </>
     )
 }

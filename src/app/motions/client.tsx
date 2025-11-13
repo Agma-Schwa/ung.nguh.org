@@ -16,6 +16,7 @@ export function ScheduleMotionButton({
     const [id, setId] = useState<bigint>(0n);
 
     function Schedule() {
+        if (motion.meeting === id) return
         execute({
             motion_id: motion.id,
             meeting_id: id,

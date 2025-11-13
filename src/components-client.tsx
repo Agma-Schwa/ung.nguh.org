@@ -135,6 +135,7 @@ export function Dialog({
     buttons: {
         label: ReactNode,
         disabled?: boolean,
+        className?: string,
         action?: () => any,
     }[]
 }) {
@@ -160,9 +161,9 @@ export function Dialog({
                         {children}
                     </div>
                     <div className='flex flex-row mt-auto justify-around mb-3'>
-                        {buttons.map(({ label, disabled, action }, index) => <div key={index}>
+                        {buttons.map(({ label, disabled, action, className }, index) => <div key={index}>
                             <Button
-                                className='bg-neutral-600 hover:bg-neutral-500 min-w-[7ch]'
+                                className={twMerge('bg-neutral-600 hover:bg-neutral-500 min-w-[7ch]', className ?? '')}
                                 disabled={disabled}
                                 onClick={async () => {
                                     if (action) {
