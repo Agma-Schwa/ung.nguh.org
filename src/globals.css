@@ -23,6 +23,8 @@ body {
     h3 { font-size: 2rem; }
     a:hover { text-decoration: underline; }
     body { font-size: var(--text-size); }
+    ul { list-style-image: url('/fleur-de-lis.svg'); }
+    ol { list-style-type: decimal; }
 }
 
 .toast {
