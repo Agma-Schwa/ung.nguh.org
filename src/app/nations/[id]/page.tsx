@@ -1,6 +1,6 @@
 import {Stripe} from '@/components';
 import {
-    CheckHasEditAccessToNation,
+    CanEditNation,
     db,
     GetAllMembers,
     GetNation, Me,
@@ -35,13 +35,8 @@ export default async function({
     const me = await Me(await auth())
 
     // Check if this user can edit or leave this ŋation.
-    let can_edit = me !== null;
+    let can_edit = me !== null && await CanEditNation(me, nation);
     let can_leave = me !== null && members.find(nm => nm.discord_id === me.discord_id)
-    if (me) {
-        try { await CheckHasEditAccessToNation(me, nation) }
-        catch (_) { can_edit = false }
-    }
-
     return (
         <>
             <Stripe>{nation.name}</Stripe>

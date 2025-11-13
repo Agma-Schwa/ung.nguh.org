@@ -1,4 +1,13 @@
-import {MemberProfile} from '@/api';
+import {MemberProfile, Motion} from '@/api';
+
+export function CanEditMotion(
+    member: MemberProfile,
+    motion: Motion,
+): boolean {
+    if (member.administrator) return true
+    if (motion.locked) return false
+    return motion.author === member.discord_id
+}
 
 export function SortMembers(members: readonly MemberProfile[]): MemberProfile[] {
     return members.toSorted((m1, m2) => {

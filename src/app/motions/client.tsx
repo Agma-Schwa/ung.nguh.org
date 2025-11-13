@@ -1,6 +1,6 @@
 'use client'
 
-import {Button, Dialog, useActionChecked} from '@/components-client';
+import {Dialog, Select, useActionChecked} from '@/components-client';
 import {Meeting, Motion} from '@/api';
 import {ScheduleMotion} from '@/services';
 import {useState} from 'react';
@@ -29,11 +29,10 @@ export function ScheduleMotionButton({
         <Dialog label='🗘' title='Schedule Motion' buttons={[
             {label: 'Ok', action: Schedule},
             {label: 'Cancel'},
-        ]}>
-            <select className='bg-neutral-600 pl-1 my-4' onChange={(e) => setId(BigInt(e.target.value))}>
+        ]}> <Select onChange={v => setId(BigInt(v))}>
                 <option value='0'>Clear</option>
                 {meetings.map(m => <option key={m.id} value={`${m.id}`}>{m.name}</option>)}
-            </select>
+            </Select>
         </Dialog>
     </div>
 }

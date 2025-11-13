@@ -2,49 +2,9 @@
 
 import {ReactNode, useState} from 'react';
 import {NationProfile} from '@/api';
-import {Button, TextInput, useActionChecked} from '@/components-client';
+import {ActionForm, Button, FormTextInput, TextInput, useActionChecked} from '@/components-client';
 import {useRouter} from 'next/navigation';
 import {EditŊation} from '@/services';
-
-function FormTextInput({
-    label,
-    type,
-    initialValue,
-    setValue,
-}: {
-    label: string,
-    type?: string,
-    initialValue: string,
-    setValue: (value: string) => void,
-}) {
-    return <label>
-        <span className='text-xl'>{label}</span>
-        <TextInput type={type} initialValue={initialValue} onChange={setValue} />
-    </label>
-}
-
-function ActionForm({
-    action,
-    returnTo,
-    children
-}: {
-    action: () => void,
-    returnTo: string,
-    children: ReactNode
-}) {
-    const router = useRouter()
-    return (
-        <div className='flex flex-col'>
-            <div className='flex flex-col [&>*]:flex [&>*]:flex-col gap-6'>
-                {children}
-            </div>
-            <div className='flex justify-center gap-6 mt-10'>
-                <Button onClick={action}>Submit</Button>
-                <Button onClick={() => router.push(returnTo)}>Cancel</Button>
-            </div>
-        </div>
-    )
-}
 
 export function NationEditForm({ nation }: { nation: NationProfile }) {
     const router = useRouter()

@@ -12,9 +12,8 @@ import {notFound} from 'next/navigation';
 import {FormatMotionType, GetMotionEmoji} from '@/app/motions/motion';
 import {Motion, MotionType, Vote} from '@/api';
 import {Fragment} from 'react';
-import Markdown from 'react-markdown';
 import {auth} from '@/auth';
-import {MotionButtons} from '@/app/motions/[id]/client';
+import {MotionButtons, MotionText} from '@/app/motions/[id]/client';
 
 function FormatMotionStatus(motion: Motion) {
     if (!motion.passed)
@@ -79,14 +78,8 @@ export default async function({
             </> : null}
 
             {motion.closed ? FormatMotionStatus(motion) : null}
-            <div className='
-                mt-8
-                [&>ol]:list-decimal [&>ul]:list-image-[url("/fleur-de-lis.svg")]
-                [&>ol,ul]:ml-12 [&>ol,ul]:my-4
-                [&_h1,h2,h3,h4,h5]:mt-8 [&_h3]:mt-6 [&_h3]:mb-2 [&_h4]:mt-6 [&_h4]:mb-2
-                [&_p+p]:mt-4
-            '><Markdown>{motion.text}</Markdown></div>
 
+            <MotionText text={motion.text} />
             <MotionButtons
                 me={me}
                 motion={motion}

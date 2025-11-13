@@ -51,6 +51,8 @@ export const MotionType = {
     Constitutional: 3n
 } as const
 
+export type MotionType = 0n | 1n | 2n | 3n
+
 /** Persistent global variables. */
 export const GlobalVar = {
     /** The Id of the active meeting. */
@@ -64,7 +66,7 @@ export type Motion = {
   id: bigint;
   text: string;
   author: Snowflake;
-  type: 0n | 1n | 2n | 3n;
+  type: MotionType;
   title: string;
   meeting?: bigint;
   quorum: bigint;

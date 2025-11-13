@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import {twMerge} from 'tailwind-merge';
 import z from 'zod';
 import {HookSafeActionFn, useAction} from 'next-safe-action/hooks';
+import {useRouter} from 'next/navigation';
 
 interface ConfirmDialogState {
     confirm(prompt: string): Promise<boolean>
@@ -62,6 +63,32 @@ export function IsSuccess(data: any): boolean {
     }
 
     return true
+}
+
+export function ActionForm({
+    action,
+    returnTo,
+    children,
+    extra_buttons
+}: {
+    action: () => void,
+    returnTo: string,
+    children: ReactNode,
+    extra_buttons?: ReactNode,
+}) {
+    const router = useRouter()
+    return (
+        <div className='flex flex-col'>
+            <div className='flex flex-col [&>*]:flex [&>*]:flex-col gap-6'>
+                {children}
+            </div>
+            <div className='flex justify-center gap-6 mt-10'>
+                <Button onClick={action}>Submit</Button>
+                {extra_buttons}
+                <Button onClick={() => router.push(returnTo)}>Cancel</Button>
+            </div>
+        </div>
+    )
 }
 
 export function Button({
@@ -179,6 +206,68 @@ export function Dialog({
             </dialog>
         </>
     )
+}
+
+export function FormTextInput({
+    label,
+    type,
+    initialValue,
+    setValue,
+}: {
+    label: string,
+    type?: string,
+    initialValue: string,
+    setValue: (value: string) => void,
+}) {
+    return <Label label={label}>
+        <TextInput type={type} initialValue={initialValue} onChange={setValue} />
+    </Label>
+}
+
+export function Label({
+    label,
+    children,
+}: {
+    label: ReactNode,
+    children: ReactNode,
+}) {
+    return <label>
+        <span className='text-xl'>{label}</span>
+        {children}
+    </label>
+}
+
+export function Select({
+    onChange,
+    defaultValue,
+    children,
+}: {
+    onChange: (e: string) => void,
+    defaultValue?: string,
+    children: ReactNode,
+}) {
+    return <select
+        className='border border-neutral-500 bg-neutral-700 pl-1 my-4'
+        onChange={(e) => onChange(e.target.value)}
+        defaultValue={defaultValue}
+    >{children}</select>
+}
+
+/** Multi-line text input control. */
+export function TextArea({
+    className,
+    initialValue,
+    onChange,
+}: {
+    className?: string,
+    initialValue?: string,
+    onChange: (e: string) => void,
+}) {
+    return <textarea
+        className={twMerge('border border-neutral-500 bg-neutral-700 px-1', className)}
+        defaultValue={initialValue}
+        onChange={(e) => onChange(e.target.value)}
+    />
 }
 
 /** Single-line text input control. */

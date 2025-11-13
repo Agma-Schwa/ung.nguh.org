@@ -8,6 +8,7 @@ import {createSafeActionClient} from 'next-safe-action';
 import {z} from 'zod';
 import {revalidatePath} from 'next/cache';
 import {notFound} from 'next/navigation';
+import {CanEditMotion} from '@/utils';
 
 // =============================================================================
 //  Globals and Types
@@ -117,25 +118,39 @@ export const DeleteMotion = ActionClient.inputSchema(z.object({
 })).action(Wrap(async ({ parsedInput: { motion_id } }) => {
     const me = await GetLoggedInMemberOrThrow()
     const motion = await GetMotionOrThrow(motion_id)
-
-    // Locked motions cannot be deleted.
-    if (motion.locked) Forbidden()
-
-    // Only the owner and admins can do this.
-    if (!me.administrator && motion.author !== me.discord_id)
-        Forbidden()
+    if (!CanEditMotion(me, motion)) Forbidden()
 
     // Delete the motion. Data referencing it will be dropped via ON DELETE CASCADE.
     await db`DELETE FROM motions WHERE id = ${motion.id}`
     RevalidateMotion(motion)
 }))
 
+/** Edit a motion. */
+export const EditMotion = ActionClient.inputSchema(z.object({
+    motion_id: z.bigint(),
+    type: z.literal([MotionType.Unsure, MotionType.Legislative, MotionType.Executive, MotionType.Constitutional]),
+    title: z.string().trim().min(1).max(500),
+    text: z.string().trim().min(1).max(10000),
+})).action(Wrap(async ({ parsedInput: { motion_id, type, title, text } }) => {
+    const me = await GetLoggedInMemberOrThrow()
+    const motion = await GetMotionOrThrow(motion_id)
+    if (!CanEditMotion(me, motion)) Forbidden()
+
+    await db`
+        UPDATE motions
+        SET type = ${type}, title = ${title}, text = ${text}
+        WHERE id = ${motion.id}
+    `
+
+    RevalidateMotion(motion)
+}))
+
 /** Edit a ŋation. */
 export const EditŊation = ActionClient.inputSchema(z.object({
     nation_id: z.bigint(),
-    name: z.string().min(1).max(200),
-    banner_url: z.string().max(6000),
-    wiki_page_link: z.string().max(6000)
+    name: z.string().trim().min(1).max(200),
+    banner_url: z.string().trim().max(6000),
+    wiki_page_link: z.string().trim().max(6000)
 })).action(Wrap(async ({ parsedInput: { nation_id, name, banner_url, wiki_page_link } }) => {
     const { me, nation } = await GetMeAndNation(nation_id)
     await CheckHasEditAccessToNation(me, nation)
@@ -443,6 +458,14 @@ export async function CheckHasEditAccessToNation(
     return CheckHasAccessToNationImpl(member, nation, true, true)
 }
 
+export async function CanEditNation(
+    member: MemberProfile,
+    nation: NationProfile
+): Promise<boolean> {
+    try { await CheckHasEditAccessToNation(member, nation); return true }
+    catch (e: unknown) { return false }
+}
+
 export async function GetLoggedInMemberOrThrow(): Promise<MemberProfile> {
     const session = await auth()
     const id = session?.discord_id ?? Unauthorised()
@@ -561,6 +584,7 @@ export async function One<T>(query: SQL.Query<any>): Promise<T | null> {
 function RevalidateMotion(motion: Motion) {
     revalidatePath('/motions')
     revalidatePath(`/motion/${motion.id}`)
+    revalidatePath(`/motion/${motion.id}/edit`)
     if (motion.meeting) revalidatePath(`/meeting/${motion.meeting}`)
 }
 
