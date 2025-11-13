@@ -5,7 +5,7 @@ import Link from 'next/link';
 import React, {ReactNode} from 'react';
 import {auth, signIn} from '@/auth';
 import {GetOwnDiscordProfile} from '@/services';
-import {Member} from '@/components';
+import {Member, MemberAvatar} from '@/components';
 import {Toaster} from 'react-hot-toast';
 import {ConfirmDialogProvider} from '@/components-client';
 
@@ -64,8 +64,16 @@ async function Sidebar() {
             <div className='mt-auto border-t border-t-neutral-600 w-full flex'>
                 <div className='w-full h-14 flex bg-neutral-700'>
                     {profile
-                        ? <div className='m-auto'>
-                            <Member member={profile}></Member>
+                        ? <div className='m-auto w-full'>
+                            {/* Don’t reuse <Member> here and format it manually so
+                                we can stop the name from overflowing */}
+                            <div className='flex justify-center w-full pl-2 gap-2 text-2xl'>
+                                <MemberAvatar member={profile} />
+                                <div className='leading-8 select-none overflow-x-hidden text-ellipsis whitespace-nowrap'>
+                                    {profile.display_name}
+                                </div>
+                                {profile.administrator ? <span className='select-none -ml-1'>🛡️</span> : null}
+                            </div>
                         </div>
                         : <form
                                 className='w-full'

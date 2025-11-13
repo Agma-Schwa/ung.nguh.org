@@ -11,6 +11,23 @@ export function Stripe({ children }: { children: ReactNode }) {
     )
 }
 
+/** UŊ member avatar. */
+export function MemberAvatar({
+    member
+}: {
+    member: MemberProfile
+}) {
+    return (
+        <div>
+            <img
+                src={member.avatar_url}
+                className='w-8 min-w-8 max-w-8 h-8 min-h-8 max-h-8 rounded-full select-none aspect-square'
+                alt={member.display_name}
+            />
+        </div>
+    )
+}
+
 /** A UŊ member. */
 export function Member({
     member
@@ -19,13 +36,7 @@ export function Member({
 }) {
     return (
         <div className='flex gap-2 text-2xl'>
-            <div>
-                <img
-                    src={member.avatar_url}
-                    className='w-8 h-8 rounded-full select-none'
-                    alt={member.display_name}
-                />
-            </div>
+            <MemberAvatar member={member} />
             <div className='leading-8'>
                 <span className={`select-none ${member.active ? '' : 'line-through text-neutral-500'}`}>
                     {member.display_name}
