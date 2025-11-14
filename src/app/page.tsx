@@ -31,7 +31,7 @@ export default async function CurrentMeeting() {
     return (
         <>
             <Stripe>Current Meeting</Stripe>
-            <ActiveMeetingControls/>
+            { me?.administrator ? <ActiveMeetingControls/> : null }
             <MeetingInfo meeting={meeting} />
         </>
     )

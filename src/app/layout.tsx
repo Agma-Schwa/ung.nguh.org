@@ -4,7 +4,7 @@ import '@/globals.css';
 import Link from 'next/link';
 import React, {ReactNode} from 'react';
 import {auth, signIn} from '@/auth';
-import {GetOwnDiscordProfile} from '@/services';
+import {GetOwnDiscordProfile, Me} from '@/services';
 import {Member, MemberAvatar} from '@/components';
 import {Toaster} from 'react-hot-toast';
 import {ConfirmDialogProvider} from '@/components-client';
@@ -40,6 +40,7 @@ async function Sidebar() {
 
     const session = await auth()
     const profile = await GetOwnDiscordProfile(session)
+    const me = await Me(session)
     return (
         <div className='
             fixed left-0 top-0 h-full w-(--sidebar-width)
@@ -51,10 +52,10 @@ async function Sidebar() {
                 <Link href='/'>Current Meeting</Link>
                 <Link href='/meetings'>Past Meetings</Link>
             </Section>
-            <Section title='Actions'>
-                <Link href='/motion'>Create a Motion</Link>
-                <Link href='/admission'>Create a Ŋation</Link>
-            </Section>
+            {session ? <Section title='Actions'>
+                { me ? <Link href='/motions/new'>Create a Motion</Link> : null }
+                <Link href='/admissions/new'>Create a Ŋation</Link>
+            </Section> : null }
             <Section title='Lists'>
                 <Link href='/members'>Members</Link>
                 <Link href='/nations'>Ŋations</Link>
