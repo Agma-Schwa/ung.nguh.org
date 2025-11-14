@@ -168,7 +168,7 @@ export function Dialog({
 }: {
     ref?: RefObject<HTMLDialogElement | null>
     label: ReactNode,
-    title: ReactNode,
+    title?: ReactNode,
     children?: ReactNode,
     hide_open_button?: boolean,
     buttons: {
@@ -193,7 +193,7 @@ export function Dialog({
                 open:flex flex-col bg-neutral-700
             `}>
                 <div className='w-full text-(size:--text-size) text-center bg-neutral-600 select-none'>
-                    {title}
+                    {title ?? label}
                 </div>
                 <div className='flex flex-col h-full'>
                     <div className='p-2 flex flex-col h-full w-full'>

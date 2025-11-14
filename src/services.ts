@@ -537,17 +537,68 @@ export const SetNationStatus = ActionClient.inputSchema(z.object({
             await tx`UPDATE nations SET deleted = ${value} WHERE id = ${nation_id}`
         }
 
-        // If this enables observer status, unselect this nation as the represented
-        // nation for all of its members.
-        if (value) await tx`
+        // Fetch the ŋation again to see if it’s either an observer ŋation or deleted.
+        const nation_new = await GetNation(nation_id) ?? InternalServerError()
+
+        // If it is, unset this as the represented ŋation.
+        if (nation_new.observer || nation_new.deleted) {
+            const members = await tx`
+                UPDATE members
+                SET represented_nation = NULL
+                WHERE represented_nation = ${nation_id}
+                RETURNING discord_id
+            ` as { discord_id: bigint }[]
+
+            // Assign a new represented ŋation to these members.
+            for (const { discord_id } of members) {
+                // Pick a 'random' ŋation that is neither deleted nor an observer.
+                const nation = await One<{ id: bigint }>(tx`
+                    SELECT memberships.nation as id
+                    FROM memberships
+                    JOIN nations ON nations.id = memberships.nation
+                    WHERE nations.deleted = FALSE AND
+                          nations.observer = FALSE AND
+                          memberships.member = ${discord_id}
+                    LIMIT 1
+                `)
+
+                if (nation) await tx`
+                    UPDATE members
+                    SET represented_nation = ${nation.id}
+                    WHERE discord_id = ${discord_id}
+                `
+            }
+        }
+
+        // Conversely, if it is now no longer deleted nor an observer, set it as the
+        // represented ŋation for any members whose represented ŋation is unset.
+        else await tx`
             UPDATE members
-            SET represented_nation = NULL
-            WHERE represented_nation = ${nation_id}
+            SET represented_nation = ${nation_id}
+            WHERE represented_nation IS NULL AND discord_id IN (
+                SELECT member FROM memberships
+                WHERE nation = ${nation_id}
+            )
         `
     })
 
     revalidatePath('/nations')
     revalidatePath(`/nations/${nation_id}`)
+}))
+
+/** Set a member’s represented ŋation. */
+export const SetRepresentedNation = ActionClient.inputSchema(z.object({
+    nation_id: z.bigint(),
+})).action(Wrap (async ({ parsedInput: { nation_id } }) => {
+    const me = await GetLoggedInMemberOrThrow()
+    const nation = await GetNation(nation_id) ?? notFound()
+    await CheckHasVoteAccessToNation(me, nation)
+    await db`
+        UPDATE members
+        SET represented_nation = ${nation.id}
+        WHERE discord_id = ${me.discord_id}
+    `
+    revalidatePath('/nations')
 }))
 
 /** Cast a vote on an admission. */
@@ -565,7 +616,7 @@ export const VoteAdmission = ActionClient.inputSchema(z.object({
     if (admission.discord_id === me.discord_id) Forbidden('You cannot vote on your own admission')
 
     // A user must have registered an active ŋation before they can vote.
-    const nation = await GetNationForVote(me, false)
+    const nation = await GetNationForVote(me)
 
     // Record the vote.
     await db.transaction(async tx => {
@@ -607,7 +658,7 @@ export const VoteMotion = ActionClient.inputSchema(z.object({
     if (!motion.enabled) Forbidden()
 
     // A user must have registered an active ŋation before they can vote.
-    const nation = await GetNationForVote(me, false)
+    const nation = await GetNationForVote(me)
 
     // Record the vote.
     await db.transaction(async tx => {
@@ -652,10 +703,10 @@ async function GetMeAndNation(nation_id: bigint) {
     return {me, nation}
 }
 
-async function GetNationForVote(member: MemberProfile, allow_admins: boolean): Promise<NationProfile> {
+async function GetNationForVote(member: MemberProfile): Promise<NationProfile> {
     if (!member.represented_nation) Forbidden('You need to choose a represented ŋation to vote')
     const nation = await GetNation(member.represented_nation) ?? InternalServerError();
-    await CheckHasAccessToNationImpl(member, nation, false, allow_admins);
+    await CheckHasVoteAccessToNation(member, nation);
     return nation
 }
 
@@ -690,6 +741,13 @@ export async function CheckHasEditAccessToNation(
     nation: NationProfile
 ) {
     return CheckHasAccessToNationImpl(member, nation, true, true)
+}
+
+export async function CheckHasVoteAccessToNation(
+    member: MemberProfile,
+    nation: NationProfile
+) {
+    return CheckHasAccessToNationImpl(member, nation, false, false);
 }
 
 export async function CanEditNation(

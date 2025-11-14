@@ -49,7 +49,7 @@ export default async function({
                 href={nation.wiki_page_link}
                 className='text-center block mt-6 text-2xl'
             >View Wiki Page</a>}
-            <h3 className='my-8 text-left'>Representatives</h3>
+            <h3 className='my-8 text-left'>Members</h3>
             <NationMemberList
                 can_edit={can_edit}
                 is_admin={!!me?.administrator}
@@ -57,7 +57,7 @@ export default async function({
                 members={members}
             />
             <div className='flex flex-row mt-8 gap-4'>
-                { can_edit ?  <AddMemberDialog nation={nation} not_members={not_members} />  : null }
+                { can_edit ? <AddMemberDialog nation={nation} not_members={not_members} /> : null }
                 { can_edit ? <EditButton id={nation.id} /> : null }
                 { can_leave ? <LeaveDialog nation={nation} me={me!} /> : null }
                 { me ? <DemoteControls nation={nation} can_edit={can_edit} me={me} /> : null }
