@@ -36,7 +36,7 @@ export default async function({
                 <span className='[font-variant:small-caps] text-neutral-300'> [{FormatMotionType(motion)}]</span>
                 <span>{GetMotionEmoji(motion)}</span>
             </Stripe>
-            <div className='flex justify-center -mt-8'>
+            <div className='flex justify-center mt-8'>
                 <Member member={member} />
             </div>
 
