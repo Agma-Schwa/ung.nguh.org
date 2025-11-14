@@ -87,14 +87,16 @@ export function MotionButtons({
         <div className='flex mt-8 justify-center gap-10'>
             { motion.enabled ? <VoteDialog is_motion={true} vote={Vote} /> : null }
             { can_edit ? <Button onClick={Edit}>Edit</Button> : null }
-            { can_edit ? <Button onClick={LockOrUnlock}>{motion.locked ? 'Unlock' : 'Lock'}</Button> : null }
-            { active_meeting === motion.meeting && me?.administrator ? <Button onClick={EnableOrDisable}>
-                {motion.enabled ? 'Disable' : 'Enable'} Voting</Button> : null }
+            { can_edit ? <Button onClick={LockOrUnlock} danger={!me?.administrator}>
+                {motion.locked ? 'Unlock' : 'Lock'}
+            </Button> : null }
+            { active_meeting === motion.meeting && motion.locked && me?.administrator ?
+                <Button onClick={EnableOrDisable}> {motion.enabled ? 'Disable' : 'Enable'} Voting</Button> : null }
             { me?.administrator && (has_votes || motion.closed) ?
                 <Button onClick={Reset} danger={true}>Reset</Button> : null}
             { me?.administrator && !motion.closed ? <Button onClick={CloseAsRejected} danger={true}>
                 Close as Rejected</Button> : null }
-            { can_edit ? <Button onClick={Delete} danger={true}>Delete</Button> : null}
+            { can_edit && !motion.locked ? <Button onClick={Delete} danger={true}>Delete</Button> : null}
         </div>
     )
 }
