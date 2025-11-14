@@ -105,7 +105,6 @@ export function MarkdownText({
     text: string
 }) {
     return <div className='
-        mt-8
         [&>ol,ul]:ml-12 [&>ol,ul]:my-4
         [&_h1,h2,h3,h4,h5]:mt-8 [&_h3]:mt-6 [&_h3]:mb-2 [&_h4]:mt-6 [&_h4]:mb-2
         [&_p+p]:mt-4

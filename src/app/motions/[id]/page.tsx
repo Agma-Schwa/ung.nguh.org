@@ -49,7 +49,7 @@ export default async function({
                 <Votes votes={votes} quorum={motion.quorum}/> : null}
             {motion.closed ? FormatMotionStatus(motion) : null}
 
-            <MarkdownText text={motion.text} />
+            <div className='mt-8'><MarkdownText text={motion.text} /></div>
             <MotionButtons
                 me={me}
                 motion={motion}

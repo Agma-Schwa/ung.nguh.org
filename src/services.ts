@@ -256,6 +256,35 @@ export const DeleteMotion = ActionClient.inputSchema(z.object({
     RevalidateMotion(motion)
 }))
 
+/** Edit an admission. */
+export const EditAdmission = ActionClient.inputSchema(AdmissionSchema.extend({
+    admission_id: z.bigint(),
+})).action(Wrap(async ({ parsedInput: {
+    admission_id,
+    name,
+    ruler,
+    banner_text,
+    banner_url,
+    claim_text,
+    claim_url,
+    trivia
+}}) => {
+    const admission = await GetAdmissionOrThrow(admission_id)
+    await CheckCanEditAdmission(admission);
+    await db`
+        UPDATE admissions
+        SET name = ${name},
+            ruler = ${ruler},
+            banner_text = ${banner_text},
+            banner_url = ${banner_url},
+            claim_text = ${claim_text},
+            claim_url = ${claim_url},
+            trivia = ${trivia}
+        WHERE id = ${admission.id}
+    `
+    RevalidateAdmission(admission)
+}))
+
 /** Edit a motion. */
 export const EditMotion = ActionClient.inputSchema(MotionSchema.extend({
     motion_id: z.bigint(),
@@ -781,9 +810,8 @@ async function GetMemberProfileFromDiscord(discord_id: bigint): Promise<MemberPr
     } satisfies MemberProfile
 }
 
-
 // This function is a bit more complicated because some non-members may edit admissions.
-async function CheckCanEditAdmission(admission: Admission) {
+export async function CheckCanEditAdmission(admission: Admission) {
     // Make sure they’re logged in.
     const session = await auth()
     if (!session?.discord_id) Unauthorised()

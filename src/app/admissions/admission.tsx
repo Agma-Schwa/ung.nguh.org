@@ -5,6 +5,8 @@ import {ActionForm, FormTextInput, Label, TextArea} from '@/components-client';
 import {useState} from 'react';
 import z from 'zod'
 import type {AdmissionSchema} from '@/utils';
+import {NationBannerFullSize} from '@/components';
+import {AdmissionClaimImage} from '@/app/admissions/[id]/page';
 
 export type AdmissionCreateEditFormData = z.input<typeof AdmissionSchema>
 
@@ -45,10 +47,12 @@ export default function AdmissionCreateEditForm({
             <FormTextInput label='Ruler Name' initialValue={ruler} setValue={setRuler} />
             <FormTextInput label='Banner Description' initialValue={bannerDesc} setValue={setBannerDesc} />
             <FormTextInput label='Banner URL' initialValue={bannerURL} setValue={setBannerURL} type='url' />
+            <NationBannerFullSize bannerURL={bannerURL} />
             <Label label='Claim Description'>
                 <TextArea onChange={setClaim} initialValue={claim} />
             </Label>
             <FormTextInput label='Claim Image' initialValue={claimImage} setValue={setClaimImage} type='url' />
+            <AdmissionClaimImage claimURL={claimImage} />
             <Label label='Additional Info'>
                 <TextArea onChange={setTrivia} initialValue={trivia} />
             </Label>

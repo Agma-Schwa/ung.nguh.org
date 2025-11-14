@@ -5,6 +5,19 @@ import {AdmissionVote} from '@/api';
 import {MarkdownText} from '@/app/motions/[id]/client';
 import {AdmissionControls} from '@/app/admissions/[id]/client';
 
+export function AdmissionClaimImage({
+    claimURL,
+}: {
+    claimURL: string
+}) {
+    if (!URL.canParse(claimURL)) return null
+    return <div className='w-full flex flex-col items-center mt-8'>
+        <div className='max-w-3/4 min-w-5 min-h-5'>
+            <img src={claimURL} alt='Map Image' className='max-h-[50rem] object-contain' />
+        </div>
+    </div>
+}
+
 export default async function({
     params
 }: {
@@ -41,14 +54,9 @@ export default async function({
                 <p className='mt-4 text-rose-400'><strong>REJECTED</strong></p> : null}
 
             <h3 className='mt-6'>Claims</h3>
-            {     admission.claim_text              ? <MarkdownText text={admission.claim_text}/>
-                : URL.canParse(admission.claim_url) ? <div className='flex justify-center mt-8'>
-                    <div className='w-1/2 min-w-5 min-h-5 border border-neutral-500'>
-                        <img src={admission.claim_url} alt='Map Image' className='w-full'/>
-                    </div>
-                </div>
-                : <p>None given.</p>
-            }
+            {admission.claim_text ? <MarkdownText text={admission.claim_text}/> : null}
+            {admission.claim_url  ? <AdmissionClaimImage claimURL={admission.claim_url}/> : null}
+            {!admission.claim_text && !admission.claim_url ? <p>None given.</p> : null}
 
             {admission.trivia ? <>
                 <h3 className='mt-6'>Description</h3>
