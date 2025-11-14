@@ -1,5 +1,5 @@
 import {Meeting, MemberProfile, Motion, MotionType, Vote} from '@/api';
-import {Member} from '@/components';
+import {IconCross, IconHourglass, IconLock, IconTick, Member} from '@/components';
 import Link from 'next/link';
 import {Fragment} from 'react';
 import {ScheduleMotionButton} from '@/app/motions/client';
@@ -17,10 +17,10 @@ export function FormatMotionType(motion: Motion) {
 }
 
 export function GetMotionEmoji(m: Motion) {
-    if (m.supported || (m.passed && m.type !== MotionType.Constitutional)) return ' ✅'
-    if (m.passed) return ' ⌛'
-    if (m.closed) return ' ❌'
-    if (m.locked) return ' 🔒'
+    if (m.supported || (m.passed && m.type !== MotionType.Constitutional)) return <IconTick />
+    if (m.enabled) return <IconHourglass />
+    if (m.closed) return <IconCross />
+    if (m.locked) return <IconLock />
     return ''
 }
 

@@ -17,6 +17,10 @@ function Icon({ emoji, className }: { emoji: string, className?: string }) {
     </span>;
 }
 
+export function IconCross({ className }: { className?: string }) {
+    return <Icon emoji='❌️' className={twMerge('ml-1.5', className)} />
+}
+
 export function IconCrown({ className }: { className?: string }) {
     return <Icon emoji='👑️' className={twMerge('-ml-1', className)} />
 }
@@ -33,12 +37,24 @@ export function IconHeadstone({ className }: { className?: string }) {
     return <Icon emoji='🪦' className={twMerge('ml-1', className)} />
 }
 
+export function IconHourglass({ className }: { className?: string }) {
+    return <Icon emoji='⏳' className={twMerge('ml-1', className)} />
+}
+
+export function IconLock({ className }: { className?: string }) {
+    return <Icon emoji='🔒' className={twMerge('ml-1', className)} />
+}
+
 export function IconShield({ className }: { className?: string }) {
     return <Icon emoji='🛡️' className={twMerge('-ml-1', className)} />
 }
 
 export function IconStar({ className }: { className?: string }) {
     return <Icon emoji='⭐️' className={twMerge('ml-1', className)} />
+}
+
+export function IconTick({ className }: { className?: string }) {
+    return <Icon emoji='✅️' className={twMerge('ml-1.5', className)} />
 }
 
 /** A section heading. */
