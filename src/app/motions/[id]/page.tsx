@@ -1,19 +1,9 @@
-import {Member, Nation, Stripe} from '@/components';
-import {
-    db, GetActiveMeeting,
-    GetAllMembers,
-    GetAllNations,
-    GetMeeting,
-    GetMember,
-    GetMotionOrThrow,
-    Me
-} from '@/services';
+import {Member, Stripe, Votes} from '@/components';
+import {db, GetActiveMeeting, GetMe, GetMeeting, GetMember, GetMotionOrThrow} from '@/services';
 import {notFound} from 'next/navigation';
 import {FormatMotionType, GetMotionEmoji} from '@/app/motions/motion';
 import {Motion, MotionType, Vote} from '@/api';
-import {Fragment} from 'react';
-import {auth} from '@/auth';
-import {MotionButtons, MotionText} from '@/app/motions/[id]/client';
+import {MarkdownText, MotionButtons} from '@/app/motions/[id]/client';
 
 function FormatMotionStatus(motion: Motion) {
     if (!motion.passed)
@@ -32,16 +22,12 @@ export default async function({
 }) {
     const { id } = await params
     try { BigInt(id); } catch (e) { notFound() }
-    const session = await auth()
-    const me = await Me(session)
+    const me = await GetMe()
     const motion = await GetMotionOrThrow(BigInt(id))
     const member = await GetMember(motion.author) ?? notFound()
     const active = await GetActiveMeeting()
     const meeting = motion.meeting ? await GetMeeting(motion.meeting) : null
     const votes = await db`SELECT * FROM votes WHERE motion = ${motion.id}` as Vote[];
-    const ayes = votes.filter(v => v.vote);
-    const members = votes.length ? await GetAllMembers() : []
-    const nations = votes.length ? await GetAllNations() : []
     return (
         <>
             <Stripe>
@@ -59,27 +45,11 @@ export default async function({
                 : meeting                             ? `Scheduled for Meeting ${meeting.name}`
                                                       : null
             } </div>
-            {votes.length !== 0 || motion.enabled || motion.closed ? <>
-                <h3>Votes</h3>
-                <p>
-                    Ayes: {ayes.length},
-                    Noes: {votes.length - ayes.length}
-                    {motion.quorum ? `, Quorum: ${motion.quorum}` : null}
-                </p>
-                <div className='grid gap-y-4 gap-x-16 leading-8 mt-4 items-center grid-cols-[auto_auto_auto_1fr]'>
-                    {votes.map(v => <Fragment key={v.nation}>
-                        <Nation
-                            nation={nations.find(n => n.id === v.nation)!}
-                            member={members.find(m => m.discord_id === v.member)}
-                        />
-                        <div className='-ml-14'>{v.vote ? '✅' : '❌'}</div>
-                    </Fragment>)}
-                </div>
-            </> : null}
-
+            {votes.length !== 0 || motion.enabled || motion.closed ?
+                <Votes votes={votes} quorum={motion.quorum}/> : null}
             {motion.closed ? FormatMotionStatus(motion) : null}
 
-            <MotionText text={motion.text} />
+            <MarkdownText text={motion.text} />
             <MotionButtons
                 me={me}
                 motion={motion}

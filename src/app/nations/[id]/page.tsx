@@ -1,14 +1,8 @@
 import {Stripe} from '@/components';
-import {
-    CanEditNation,
-    db,
-    GetAllMembers,
-    GetNation, Me,
-} from '@/services';
+import {CanEditNation, db, GetAllMembers, GetMe, GetNation,} from '@/services';
 import {notFound} from 'next/navigation';
 import {MemberProfile} from '@/api';
 import {AddMemberDialog, DemoteControls, EditButton, LeaveDialog, NationMemberList} from '@/app/nations/[id]/client';
-import {auth} from '@/auth';
 
 export default async function({
     params
@@ -32,7 +26,7 @@ export default async function({
         .filter(m => !members.find(nm => nm.ruler && nm.discord_id === m.discord_id))
 
     // Get the current user.
-    const me = await Me(await auth())
+    const me = await GetMe()
 
     // Check if this user can edit or leave this ŋation.
     let can_edit = me !== null && await CanEditNation(me, nation);

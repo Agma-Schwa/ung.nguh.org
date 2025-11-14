@@ -12,6 +12,7 @@ import {
     VoteMotion
 } from '@/services';
 import Markdown from 'react-markdown';
+import {VoteDialog} from '@/app/motions/motion';
 
 export function MotionButtons({
     me,
@@ -84,16 +85,7 @@ export function MotionButtons({
 
     return (
         <div className='flex mt-8 justify-center gap-10'>
-            { motion.enabled ? <Dialog
-                label={'Vote'}
-                title={'Vote'} buttons={[
-                    {label: 'Aye', className: 'bg-green-800 hover:bg-green-700', action: () => Vote(true)},
-                    {label: 'Cancel'},
-                    {label: 'No', className: 'bg-rose-800 hover:bg-rose-700', action: () => Vote(false)},
-                ]}
-            >   <p>Vote in support of this motion?</p>
-                <p>You can still change your vote later for as long as the motion remains open.</p>
-            </Dialog> : null }
+            { motion.enabled ? <VoteDialog is_motion={true} vote={Vote} /> : null }
             { can_edit ? <Button onClick={Edit}>Edit</Button> : null }
             { can_edit ? <Button onClick={LockOrUnlock}>{motion.locked ? 'Unlock' : 'Lock'}</Button> : null }
             { active_meeting === motion.meeting && me?.administrator ? <Button onClick={EnableOrDisable}>
@@ -107,7 +99,7 @@ export function MotionButtons({
     )
 }
 
-export function MotionText({
+export function MarkdownText({
     text,
 }: {
     text: string

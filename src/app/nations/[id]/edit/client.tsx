@@ -5,6 +5,7 @@ import {NationProfile} from '@/api';
 import {ActionForm, Button, FormTextInput, TextInput, useActionChecked} from '@/components-client';
 import {useRouter} from 'next/navigation';
 import {EditŊation} from '@/services';
+import {NationBannerFullSize} from '@/components';
 
 export function NationEditForm({ nation }: { nation: NationProfile }) {
     const router = useRouter()
@@ -28,13 +29,7 @@ export function NationEditForm({ nation }: { nation: NationProfile }) {
             <FormTextInput label='Name' initialValue={name} setValue={setName} />
             <FormTextInput label='Wiki Page URL' initialValue={wikiPage} setValue={setWikiPage} type='url' />
             <FormTextInput label='Banner URL' initialValue={bannerURL} setValue={setBannerURL} type='url' />
-            {URL.canParse(bannerURL) ? <div className='flex items-center mt-8'>
-                <img src={bannerURL} alt='Banner' className='
-                    w-20
-                    [box-shadow:_2px_2px_5px_var(--color-neutral-800)]
-                    [image-rendering:crisp-edges]
-                ' />
-            </div> : null }
+            <NationBannerFullSize bannerURL={bannerURL} />
         </ActionForm>
     )
 }

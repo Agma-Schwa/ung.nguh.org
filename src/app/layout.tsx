@@ -4,8 +4,8 @@ import '@/globals.css';
 import Link from 'next/link';
 import React, {ReactNode} from 'react';
 import {auth, signIn} from '@/auth';
-import {GetOwnDiscordProfile, Me} from '@/services';
-import {Member, MemberAvatar} from '@/components';
+import {GetOwnDiscordProfile, GetMeImpl} from '@/services';
+import {MemberAvatar} from '@/components';
 import {Toaster} from 'react-hot-toast';
 import {ConfirmDialogProvider} from '@/components-client';
 
@@ -40,7 +40,7 @@ async function Sidebar() {
 
     const session = await auth()
     const profile = await GetOwnDiscordProfile(session)
-    const me = await Me(session)
+    const me = await GetMeImpl(session)
     return (
         <div className='
             fixed left-0 top-0 h-full w-(--sidebar-width)
@@ -70,7 +70,7 @@ async function Sidebar() {
                                 we can stop the name from overflowing */}
                             <div className='flex justify-center w-full pl-2 gap-2 text-2xl'>
                                 <MemberAvatar member={profile} />
-                                <div className='leading-8 select-none overflow-x-hidden text-ellipsis whitespace-nowrap'>
+                                <div className='leading-8 select-none text-ell-nowrap'>
                                     {profile.display_name}
                                 </div>
                                 {profile.administrator ? <span className='select-none -ml-1'>🛡️</span> : null}

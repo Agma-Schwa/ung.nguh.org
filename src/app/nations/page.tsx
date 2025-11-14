@@ -1,7 +1,6 @@
 import {Nation, Stripe} from '@/components';
 import {MemberProfile, NationProfile} from '@/api'
-import {db, Me} from '@/services';
-import {auth} from '@/auth';
+import {db, GetMe} from '@/services';
 import Link from 'next/link';
 
 export default async function() {
@@ -20,7 +19,7 @@ export default async function() {
         return db`SELECT nation FROM memberships WHERE member = ${me.discord_id}`;
     }
 
-    const me = await Me(await auth())
+    const me = await GetMe()
     const all_nations = await db`SELECT * FROM nations ORDER BY name` as NationProfile[]
     const my_nation_ids = await GetMyNationIds(me)
     const not_deleted = all_nations.filter(n => !n.deleted)

@@ -1,12 +1,13 @@
-import {ReactNode, useMemo} from 'react';
-import type {MemberProfile, NationPartial} from '@/api';
+import {Fragment, ReactNode, useMemo} from 'react';
+import {MemberProfile, NationPartial, PartialMember, VoteCommon} from '@/api';
 import {SortMembers} from '@/utils';
+import {GetAllMembers, GetAllNations} from '@/services';
 
 /** A section heading. */
 export function Stripe({ children }: { children: ReactNode }) {
     return (
         <div>
-            <h2 className='text-center my-20 select-none'>{children}</h2>
+            <h2 className='text-center mt-10 mb-6 select-none'>{children}</h2>
         </div>
     )
 }
@@ -15,7 +16,7 @@ export function Stripe({ children }: { children: ReactNode }) {
 export function MemberAvatar({
     member
 }: {
-    member: MemberProfile
+    member: PartialMember
 }) {
     return (
         <div>
@@ -38,7 +39,7 @@ export function Member({
         <div className='flex gap-2 text-2xl'>
             <MemberAvatar member={member} />
             <div className='leading-8'>
-                <span className={`select-none ${member.active ? '' : 'line-through text-neutral-500'}`}>
+                <span className={`select-none text-ell-nowrap ${member.active ? '' : 'line-through text-neutral-500'}`}>
                     {member.display_name}
                 </span>
             </div>
@@ -78,8 +79,9 @@ export function Nation({
                 <img
                     src={URL.canParse(nation.banner_url ?? '') ? nation.banner_url! : null!}
                     className='
-                        select-none rounded-[0_0_var(--width)_var(--width)] w-(--width)
-                        h-(--height)
+                        select-none rounded-[0_0_var(--width)_var(--width)]
+                        w-(--width) min-w-(--width)
+                        h-(--height) min-h-(--height)
                         [outline:1px_solid] outline-neutral-500
                     '
                 />
@@ -96,7 +98,7 @@ export function Nation({
             <span className='
                 [font-variant:small-caps] h-(--height) leading-(--height) text-2xl ml-1
             '>
-                <span className={`select-none ${nation.deleted ? 'line-through text-neutral-500' : ''}`}>
+                <span className={`select-none text-ell-nowrap ${nation.deleted ? 'line-through text-neutral-500' : ''}`}>
                     {nation.name}
                 </span>
                 {nation.observer && !nation.deleted ? <span className='text-[1.5rem]'> 👀️</span> : null}
@@ -105,4 +107,48 @@ export function Nation({
             </span>
         </div>
     )
+}
+
+export function NationBannerFullSize({
+    bannerURL,
+}: {
+    bannerURL: string;
+}) {
+    if (!URL.canParse(bannerURL)) return null
+    return <div className='flex items-center'>
+        <img src={bannerURL} alt='Banner' className='
+            w-20
+            [box-shadow:_2px_2px_5px_var(--color-neutral-800)]
+            [image-rendering:crisp-edges]
+        ' />
+    </div>
+}
+
+export async function Votes({
+    votes,
+    quorum,
+}: {
+    votes: VoteCommon[]
+    quorum?: bigint
+}) {
+    const ayes = votes.filter(v => v.vote);
+    const members = votes.length ? await GetAllMembers() : []
+    const nations = votes.length ? await GetAllNations() : []
+    return <>
+        <h3>Votes</h3>
+        <p>
+            Ayes: {ayes.length},
+            Noes: {votes.length - ayes.length}
+            {quorum ? `, Quorum: ${quorum}` : null}
+        </p>
+        <div className='grid gap-y-4 gap-x-16 leading-8 mt-4 items-center grid-cols-[auto_1fr]'>
+            {votes.map(v => <Fragment key={v.nation}>
+                <Nation
+                    nation={nations.find(n => n.id === v.nation)!}
+                    member={members.find(m => m.discord_id === v.member)}
+                />
+                <div className='-ml-14'>{v.vote ? '✅' : '❌'}</div>
+            </Fragment>)}
+        </div>
+    </>
 }

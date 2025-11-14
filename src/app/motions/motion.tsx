@@ -1,8 +1,9 @@
-import {Meeting, MemberProfile, Motion, MotionType} from '@/api';
+import {Meeting, MemberProfile, Motion, MotionType, Vote} from '@/api';
 import {Member} from '@/components';
 import Link from 'next/link';
 import {Fragment} from 'react';
 import {ScheduleMotionButton} from '@/app/motions/client';
+import {Dialog} from '@/components-client';
 
 export function FormatMotionType(motion: Motion) {
     switch (motion.type) {
@@ -58,4 +59,23 @@ export async function MotionList({
             })}
         </div>
     )
+}
+
+export function VoteDialog({
+    is_motion,
+    vote,
+}: {
+    is_motion: boolean,
+    vote: (vote: boolean) => void
+}) {
+    return <Dialog
+        label={'Vote'}
+        title={'Vote'} buttons={[
+            {label: 'Aye', className: 'bg-green-800 hover:bg-green-700', action: () => vote(true)},
+            {label: 'Cancel'},
+            {label: 'No', className: 'bg-rose-800 hover:bg-rose-700', action: () => vote(false)},
+        ]}
+    >   <p>Vote in support of this {is_motion ? 'motion' : 'admission'}?</p>
+        <p>You can still change your vote later for as long as the {is_motion ? 'motion' : 'admission'} remains open.</p>
+    </Dialog>
 }

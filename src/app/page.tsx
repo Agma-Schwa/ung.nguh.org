@@ -1,13 +1,11 @@
 import {Stripe} from '@/components';
-import {db, GetActiveMeeting, GetMeetingOrThrow, Me} from '@/services';
-import {auth} from '@/auth';
+import {db, GetActiveMeeting, GetMe} from '@/services';
 import {ActiveMeetingControls, NoActiveMeetingControls} from '@/app/client';
 import {MeetingInfo} from '@/app/meetings/server';
 import {Meeting, NO_ACTIVE_MEETING} from '@/api';
 
 export default async function CurrentMeeting() {
-    const session = await auth()
-    const me = await Me(session)
+    const me = await GetMe()
     const active = await GetActiveMeeting()
     const meetings = await db`SELECT * FROM meetings ORDER BY ROWID DESC` as Meeting[]
     if (active === NO_ACTIVE_MEETING) {

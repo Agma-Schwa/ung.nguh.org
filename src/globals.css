@@ -25,6 +25,11 @@ body {
     body { font-size: var(--text-size); }
     ul { list-style-image: url('/fleur-de-lis.svg'); }
     ol { list-style-type: decimal; }
+    .text-ell-nowrap {
+        overflow-x: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
 
 .toast {

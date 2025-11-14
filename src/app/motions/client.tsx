@@ -13,7 +13,7 @@ import {
 import {Meeting, Motion, MotionType} from '@/api';
 import {ScheduleMotion} from '@/services';
 import {useState} from 'react';
-import {MotionText} from '@/app/motions/[id]/client';
+import {MarkdownText} from '@/app/motions/[id]/client';
 
 function MotionTypeToString(type: MotionType) {
     switch (type) {
@@ -66,7 +66,7 @@ export function EditOrCreateMotionForm({
                 </Label>
             </ActionForm>
             {preview ? <>
-                <MotionText text={text} />
+                <MarkdownText text={text} />
             </> : null}
         </>
     )

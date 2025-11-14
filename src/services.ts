@@ -1,6 +1,15 @@
 'use server'
 
-import {GlobalVar, Meeting, MemberProfile, Motion, MotionType, NationProfile, NO_ACTIVE_MEETING} from '@/api';
+import {
+    Admission,
+    GlobalVar,
+    Meeting,
+    MemberProfile,
+    Motion,
+    MotionType,
+    NationProfile,
+    NO_ACTIVE_MEETING
+} from '@/api';
 import {Session} from '@auth/core/types';
 import {SQL} from 'bun';
 import {auth} from '@/auth';
@@ -8,7 +17,7 @@ import {createSafeActionClient} from 'next-safe-action';
 import {z} from 'zod';
 import {revalidatePath} from 'next/cache';
 import {notFound} from 'next/navigation';
-import {CanEditMotion} from '@/utils';
+import {AdmissionSchema, CanEditMotion, MotionSchema} from '@/utils';
 
 // =============================================================================
 //  Globals and Types
@@ -53,12 +62,6 @@ function Unauthorised(message: string = 'Unauthorized'): never {
 //  Actions
 // =============================================================================
 const ActionClient = createSafeActionClient();
-
-const MotionSchema = z.object({
-    type: z.literal([MotionType.Unsure, MotionType.Legislative, MotionType.Executive, MotionType.Constitutional]),
-    title: z.string().trim().min(1).max(500),
-    text: z.string().trim().min(1).max(10000),
-})
 
 /** Add a member to a ŋation. */
 export const AddMemberToNation = ActionClient.inputSchema(z.object({
@@ -118,6 +121,82 @@ export const CloseMotionAsRejected = ActionClient.inputSchema(z.object({
     RevalidateMotion(motion)
 }))
 
+/** Create an admission. */
+export const CreateAdmission = ActionClient.inputSchema(
+    AdmissionSchema
+).action(Wrap(async ({ parsedInput: {
+    name,
+    ruler,
+    banner_text,
+    banner_url,
+    claim_text,
+    claim_url,
+    trivia
+}}) => {
+    // This route is special because non-members are allowed to post to it, because
+    // this form is how people become members in the first place. Instead, check if
+    // they’re a nguhcrafter here. This is something that the bot needs to do.
+    const discord_id = await CheckIsNguhcrafter()
+
+    // Conversely, people who are already rulers of a ŋation can’t create a new one
+    // (they’d have to leave all other ŋations first).
+    const ruler_count = await Scalar(db`
+        SELECT COUNT(*) AS value
+        FROM memberships
+        WHERE member = ${discord_id} AND ruler = TRUE`
+    )
+
+    if (ruler_count !== 0n) BadRequest('A ruler of a ŋation cannot create a new ŋation')
+
+    // The same applies if they already have an open admission.
+    const admission_count = await Scalar(db`
+        SELECT COUNT(*) AS value
+        FROM admissions 
+        WHERE discord_id = ${discord_id} AND closed = FALSE
+    `)
+
+    if (admission_count !== 0n) BadRequest('You already have an open admission')
+
+    // Get the member’s profile; if this fails for some reason, give up.
+    const profile = await GetMemberProfileFromDiscord(discord_id) ?? Forbidden()
+
+    // Finally, create the admission.
+    const admission = await Scalar(db`
+        INSERT INTO admissions (
+            discord_id,
+            display_name,
+            avatar_url,
+
+            name,
+            ruler,
+            banner_text,
+            banner_url,
+            claim_text,
+            claim_url,
+            trivia
+        ) VALUES (
+            ${discord_id},
+            ${profile.display_name},
+            ${profile.avatar_url},
+
+            ${name},
+            ${ruler},
+            ${banner_text},
+            ${banner_url},
+            ${claim_text},
+            ${claim_url},
+            ${trivia}
+        ) RETURNING id AS value
+    `)
+
+    await SendWebhookMessage(
+        `<@${discord_id}> has opened an admission for their ŋation [**${name}**](<${process.env.BASE_URL}/admissions/${admission}>)!`,
+        true
+    )
+
+    return { id: admission }
+}))
+
 /** Create a new meeting. */
 export const CreateMeeting = ActionClient.inputSchema(z.object({
     name: z.string().trim().min(1).max(50)
@@ -133,14 +212,13 @@ export const CreateMotion = ActionClient.inputSchema(
     MotionSchema
 ).action(Wrap(async ({ parsedInput: { type, title, text } }) => {
     const me = await GetLoggedInMemberOrThrow()
-    const res = await One<{ id: bigint }>(db`
+    const id = await Scalar(db`
         INSERT INTO motions (author, type, title, text)
         VALUES (${me.discord_id}, ${type}, ${title}, ${text})
-        RETURNING id
+        RETURNING id AS value
     `)
 
     // If a meeting is active, schedule it automatically.
-    const id = res!.id
     const active = await GetActiveMeeting()
     if (active !== NO_ACTIVE_MEETING) await db`
         UPDATE motions
@@ -150,6 +228,16 @@ export const CreateMotion = ActionClient.inputSchema(
 
     revalidatePath('/motions')
     return { id }
+}))
+
+/** Delete an admission. */
+export const DeleteAdmission = ActionClient.inputSchema(z.object({
+    admission_id: z.bigint(),
+})).action(Wrap(async ({ parsedInput: { admission_id } }) => {
+    const admission = await GetAdmissionOrThrow(admission_id)
+    await CheckCanEditAdmission(admission);
+    await db`DELETE FROM admissions WHERE id = ${admission.id}`
+    RevalidateAdmission(admission)
 }))
 
 /** Delete a motion. */
@@ -256,6 +344,19 @@ export const LockOrUnlockMotion = ActionClient.inputSchema(z.object({
     RevalidateMotion(motion)
 }))
 
+/** Pass an admission irrespective of vote counts. */
+export const PassAdmission = ActionClient.inputSchema(z.object({
+    admission_id: z.bigint(),
+})).action(Wrap(async ({ parsedInput: { admission_id } }) => {
+    const me = await GetLoggedInMemberOrThrow()
+    const admission = await GetAdmissionOrThrow(admission_id)
+    if (!me.administrator) Forbidden()
+    if (admission.passed) BadRequest('Admission already passed!')
+    await PassAdmissionImpl(admission)
+    RevalidateAdmission(admission)
+    revalidatePath('/nations')
+}))
+
 /** Remove a member from a ŋation. */
 export const RemoveMemberFromNation = ActionClient.inputSchema(z.object({
     member_to_remove: z.bigint(),
@@ -292,13 +393,13 @@ export const RemoveMemberFromNation = ActionClient.inputSchema(z.object({
 
         // And if this leaves the ŋation without a ruler, promote a random
         // member to ruler.
-        const rulers = await One<{value: bigint }>(tx`
-            SELECT COUNT(*) as value FROM memberships
+        const rulers = await Scalar(tx`
+            SELECT COUNT(*) AS value FROM memberships
             WHERE nation = ${nation.id} AND ruler = TRUE
         `)
 
 
-        if (rulers?.value === 0n) {
+        if (rulers === 0n) {
             // This may return nothing if this nation is out of members.
             const random_member = await One<{ member: bigint }>(tx`
                 SELECT member FROM memberships WHERE nation = ${nation.id} LIMIT 1
@@ -522,6 +623,13 @@ export async function CanEditNation(
     catch (e: unknown) { return false }
 }
 
+export async function GetAdmissionOrThrow(id: bigint): Promise<Admission> {
+    return await One<Admission>(db`
+        SELECT * FROM admissions
+        WHERE id = ${id} LIMIT 1
+    `) ?? notFound()
+}
+
 export async function GetLoggedInMemberOrThrow(): Promise<MemberProfile> {
     const session = await auth()
     const id = session?.discord_id ?? Unauthorised()
@@ -581,39 +689,42 @@ export async function GetNation(id: bigint): Promise<NationProfile | null> {
 }
 
 async function GetNationCountForQuorum(sql: Bun.SQL | Bun.TransactionSQL): Promise<bigint> {
-    const count = await One<{ count: bigint }>(sql`
-        SELECT COUNT(*) as count FROM (
+    return Scalar(sql`
+        SELECT COUNT(*) AS value FROM (
             SELECT 1 FROM nations
             INNER JOIN memberships ON memberships.nation = nations.id
             WHERE nations.deleted = FALSE AND nations.observer = FALSE
             GROUP BY nations.id
         )
     `)
-
-    return count!.count
 }
 
 export async function GetOwnDiscordProfile(
     session: Session | null
 ): Promise<MemberProfile | null> {
-    'use server';
     if (!session?.discord_id) return null
 
     // Check the DB first.
-    let user = Me(session)
+    let user = await GetMeImpl(session)
     if (user) return user
 
+    // If the member is not in the DB, ask the bot.
+    return GetMemberProfileFromDiscord(BigInt(session.discord_id))
+}
+
+async function GetMemberProfileFromDiscord(discord_id: bigint): Promise<MemberProfile | null> {
     // Fetch the profile from discord if this user isn’t in the DB.
     const res = await fetch(`${API_URL}/profile`, {
         headers: {
             'Authorization': process.env.SERVICE_TOKEN!,
-            'NguhOrg-User-Id' : session.discord_id,
+            'NguhOrg-User-Id': String(discord_id),
         }
     })
 
-    let partial = await res.json() as PartialMemberProfile
+    if (!res.ok) return null
+    const partial = await res.json() as PartialMemberProfile
     return {
-        discord_id: BigInt(session.discord_id),
+        discord_id,
         represented_nation: null,
         active: 1n,
         administrator: 0n,
@@ -622,7 +733,51 @@ export async function GetOwnDiscordProfile(
     } satisfies MemberProfile
 }
 
-export async function Me(session: Session | null): Promise<MemberProfile | null> {
+
+// This function is a bit more complicated because some non-members may edit admissions.
+async function CheckCanEditAdmission(admission: Admission) {
+    // Make sure they’re logged in.
+    const session = await auth()
+    if (!session?.discord_id) Unauthorised()
+    const member_id = BigInt(session.discord_id)
+
+    // Administrators can edit any admission.
+    const member = await GetMember(member_id)
+    if (member?.administrator) return
+
+    // Otherwise, only the author of the admission can edit their own open admission.
+    if (admission.closed || admission.discord_id !== member_id) Forbidden()
+}
+
+async function CheckIsNguhcrafter(): Promise<bigint> {
+    const session = await auth()
+    if (!session?.discord_id) Unauthorised()
+
+    // If they’re in the DB, they’re definitely a member.
+    //
+    // FIXME: We need some way to ban users since we no longer check whether someone
+    //        is a server member on *every* request. Ideally, the bot should just update our
+    //        database directly, but for now, we can also do this manually.
+    if (await GetMeImpl(session)) return BigInt(session.discord_id)
+
+    // Ask the bot.
+    const res = await fetch(`${API_URL}/is_nguhcrafter`, {
+        headers: {
+            'Authorization': process.env.SERVICE_TOKEN!,
+            'NguhOrg-User-Id' : session.discord_id,
+        }
+    })
+
+    // The bot returns either a 404 or a 204 for this.
+    if (!res.ok) Forbidden('You must be a player on the MC server to create a ŋation')
+    return BigInt(session.discord_id)
+}
+
+export async function GetMe(): Promise<MemberProfile | null> {
+    return GetMeImpl(await auth())
+}
+
+export async function GetMeImpl(session: Session | null): Promise<MemberProfile | null> {
     if (!session?.discord_id) return null
     return GetMember(BigInt(session.discord_id))
 }
@@ -634,14 +789,87 @@ export async function One<T>(query: SQL.Query<any>): Promise<T | null> {
     return res[0] as T
 }
 
+export async function Scalar(query: SQL.Query<any>): Promise<bigint> {
+    const res = await query
+    if (res.length > 1) throw Error("Expected at most one row")
+    if (res.length !== 1 || !('value' in res[0]) || typeof res[0].value != 'bigint') throw Error("Expected scalar")
+    return res[0].value
+}
+
 // =============================================================================
 //  Other Helpers
 // =============================================================================
+async function PassAdmissionImpl(admission: Admission) {
+    await db.begin(async tx => {
+        const result = await tx`
+            UPDATE admissions
+            SET passed = TRUE, closed = TRUE
+            WHERE id = ${admission.id} AND closed = FALSE -- The AND clause is necessary to correctly query the affected rows.
+            RETURNING ROWID -- Returning the rowid is a hack; this will return no rows if there were no changes 
+        `
+
+        // If this didn’t do anything, stop here so we don’t add a ŋation twice.
+        if (result.length === 0) return
+
+        // Add the ŋation.
+        const nation_id = await Scalar(tx`
+            INSERT INTO nations (name, banner_url) 
+            VALUES (${admission.name}, ${admission.banner_url}) 
+            RETURNING id AS value
+        `)
+
+        // Add the user as a member if they aren’t already one.
+        //
+        // And for simplicity just also set this as this member’s represented ŋation if
+        // they don’t already have one.
+        await tx`
+            INSERT OR IGNORE INTO members (discord_id, display_name, avatar_url, represented_nation)
+            VALUES (${admission.discord_id}, ${admission.display_name}, ${admission.avatar_url}, ${nation_id})
+            ON CONFLICT (discord_id)
+            DO UPDATE SET represented_nation = ${nation_id} WHERE represented_nation IS NULL
+        `
+
+        // And add them as a ruler to the ŋation.
+        await tx`
+            INSERT INTO memberships (member, nation, ruler) 
+            VALUES (${admission.discord_id}, ${nation_id}, TRUE)
+        `
+
+        // Finally, forward everything to discord.
+        await SendWebhookMessage(
+            `<@${admission.discord_id}>’s ŋation [**${admission.name}**](<${process.env.BASE_URL}/nations/${nation_id}>) has been admitted!`
+        )
+    })
+
+}
+
+function RevalidateAdmission(admission: Admission) {
+    revalidatePath('/admissions')
+    revalidatePath(`/admission/${admission.id}`)
+    revalidatePath(`/admission/${admission.id}/edit`)
+}
+
 function RevalidateMotion(motion: Motion) {
     revalidatePath('/motions')
     revalidatePath(`/motion/${motion.id}`)
     revalidatePath(`/motion/${motion.id}/edit`)
     if (motion.meeting) revalidatePath(`/meeting/${motion.meeting}`)
+}
+
+async function SendWebhookMessage(content: string, ping = false) {
+    const res = await fetch(process.env.WEBHOOK_URL!, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            content: `${ping ? `<@&${process.env.UNG_ROLE_ID}> ` : ''}${content}`
+        })
+    })
+
+    if (!res.ok) console.error(
+        'Could not send webhook message:',
+        res.status,
+        await res.text()
+    )
 }
 
 async function UpdateMotionAfterVote(tx: Bun.TransactionSQL, motion: Motion) {

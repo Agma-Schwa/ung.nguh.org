@@ -1,4 +1,22 @@
-import {MemberProfile, Motion} from '@/api';
+import {Admission, MemberProfile, Motion, MotionType} from '@/api';
+import {z} from 'zod';
+import {GetMember} from '@/services';
+
+export const AdmissionSchema = z.object({
+    name: z.string().trim().min(1).max(200),
+    ruler: z.string().trim().min(0).max(200),
+    banner_text: z.string().trim().min(0).max(1000),
+    banner_url: z.string().trim().min(0).max(6000),
+    claim_text: z.string().trim().min(0).max(6000),
+    claim_url: z.string().trim().min(0).max(6000),
+    trivia: z.string().trim().min(0).max(6000),
+})
+
+export const MotionSchema = z.object({
+    type: z.literal([MotionType.Unsure, MotionType.Legislative, MotionType.Executive, MotionType.Constitutional]),
+    title: z.string().trim().min(1).max(500),
+    text: z.string().trim().min(1).max(10000),
+})
 
 export function CanEditMotion(
     member: MemberProfile,

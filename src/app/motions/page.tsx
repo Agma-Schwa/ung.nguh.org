@@ -1,12 +1,10 @@
 import {Stripe} from '@/components';
-import {db, Me} from '@/services';
+import {db, GetMe} from '@/services';
 import {Meeting, MemberProfile, Motion} from '@/api';
 import {MotionList} from '@/app/motions/motion';
-import {auth} from '@/auth';
 
 export default async function() {
-    const session = await auth()
-    const me = await Me(session)
+    const me = await GetMe()
     const motions = await db`SELECT * FROM motions` as Motion[]
     const members = await db`SELECT * FROM members` as MemberProfile[]
     const meetings = await db`SELECT * FROM meetings` as Meeting[]

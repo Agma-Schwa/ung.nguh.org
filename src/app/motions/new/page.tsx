@@ -6,7 +6,7 @@ export default async function() {
     await GetLoggedInMemberOrThrow()
     return (
         <>
-            <Stripe>Create a Motion</Stripe>
+            <Stripe>Submit a Motion</Stripe>
             <CreateMotionForm />
         </>
     )

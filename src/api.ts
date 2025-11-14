@@ -1,13 +1,34 @@
 type Snowflake = bigint
 type bool = bigint;
 
-/**
- * UŊ Member.
- */
-export type MemberProfile = {
+export type Admission = PartialMember & {
+  id: bigint;
+  passed: bool;
+  closed: bool;
+  name: string;
+  ruler: string;
+  banner_text: string;
+  banner_url: string;
+  claim_text: string;
+  claim_url: string;
+  trivia: string;
+};
+
+export type AdmissionVote = VoteCommon & {
+    admission: bigint;
+}
+
+/** Member profile data common to admissions and full members. */
+export type PartialMember = {
     discord_id: Snowflake;
     display_name: string;
     avatar_url: string;
+}
+
+/**
+ * UŊ Member.
+ */
+export type MemberProfile = PartialMember & {
     represented_nation: bigint | null;
     active: bool;
     administrator: bool;
@@ -86,9 +107,12 @@ export type Meeting = {
 /** Used to indicate that there is no active meeting. */
 export const NO_ACTIVE_MEETING: bigint = 0n
 
-export type Vote = {
-    motion: bigint;
+export type VoteCommon = {
     member: bigint;
     nation: bigint;
     vote: bool;
+}
+
+export type Vote = VoteCommon & {
+    motion: bigint;
 }
