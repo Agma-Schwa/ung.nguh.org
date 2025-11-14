@@ -1,7 +1,45 @@
-import {Fragment, ReactNode, useMemo} from 'react';
+import {Fragment, ReactNode} from 'react';
 import {MemberProfile, NationPartial, PartialMember, VoteCommon} from '@/api';
-import {SortMembers} from '@/utils';
 import {GetAllMembers, GetAllNations} from '@/services';
+import {twMerge} from 'tailwind-merge';
+import {Noto_Color_Emoji} from 'next/font/google';
+
+const emoji_font = Noto_Color_Emoji({
+    preload: true,
+    weight: '400',
+    fallback: ['system-ui'],
+    subsets: ['emoji']
+})
+
+function Icon({ emoji, className }: { emoji: string, className?: string }) {
+    return <span className={`${emoji_font.className} ${twMerge('select-none', className)}`}>
+        {emoji}
+    </span>;
+}
+
+export function IconCrown({ className }: { className?: string }) {
+    return <Icon emoji='👑️' className={twMerge('-ml-1', className)} />
+}
+
+export function IconDove({ className }: { className?: string }) {
+    return <Icon emoji='🕊️️️' className={className} />
+}
+
+export function IconEye({ className }: { className?: string }) {
+    return <Icon emoji='👁️️' className={twMerge('ml-1', className)} />
+}
+
+export function IconHeadstone({ className }: { className?: string }) {
+    return <Icon emoji='🪦' className={twMerge('ml-1', className)} />
+}
+
+export function IconShield({ className }: { className?: string }) {
+    return <Icon emoji='🛡️' className={twMerge('-ml-1', className)} />
+}
+
+export function IconStar({ className }: { className?: string }) {
+    return <Icon emoji='⭐️' className={twMerge('ml-1', className)} />
+}
 
 /** A section heading. */
 export function Stripe({ children }: { children: ReactNode }) {
@@ -43,8 +81,8 @@ export function Member({
                     {member.display_name}
                 </span>
             </div>
-            {member.administrator ? <span className='select-none -ml-1'>🛡️</span> : null}
-            {member.ruler ? <span className='select-none -ml-1'>👑️</span> : null}
+            {member.administrator ? <IconShield /> : null}
+            {member.ruler ? <IconCrown /> : null}
         </div>
     )
 }
@@ -87,9 +125,9 @@ export function Nation({
                 <span className={`select-none text-ell-nowrap ${nation.deleted ? 'line-through text-neutral-500' : ''}`}>
                     {nation.name}
                 </span>
-                {nation.observer && !nation.deleted ? <span className='text-[1.5rem]'> 👀️</span> : null}
-                {nation.deleted ? <span className='text-[1.5rem]'> 🪦</span> : null}
-                {starred ? <span className='text-[1.5rem]'> ⭐️</span> : null}
+                {nation.observer && !nation.deleted ? <IconEye /> : null}
+                {nation.deleted ? <IconHeadstone /> : null}
+                {starred ? <IconStar /> : null}
             </span>
         </div>
     )

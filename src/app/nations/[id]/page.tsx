@@ -1,4 +1,4 @@
-import {Stripe} from '@/components';
+import {IconEye, IconHeadstone, Stripe} from '@/components';
 import {CanEditNation, db, GetAllMembers, GetMe, GetNation,} from '@/services';
 import {notFound} from 'next/navigation';
 import {MemberProfile} from '@/api';
@@ -37,13 +37,13 @@ export default async function({
             <div className='flex'>
                 <img src={URL.canParse(nation.banner_url ?? '') ? nation.banner_url! : null!} className='w-32 mx-auto'/>
             </div>
-            {nation.observer && !nation.deleted ? <div className='flex justify-center text-2xl mt-8 gap-2'>
+            {nation.observer && !nation.deleted ? <div className='flex justify-center text-2xl mt-8'>
                 <em>This ŋation is an observer ŋation</em>
-                <span>👀</span>
+                <IconEye />
             </div> : null}
-            {nation.deleted ? <div className='flex justify-center text-2xl mt-8 gap-2'>
+            {nation.deleted ? <div className='flex justify-center text-2xl mt-8'>
                 <em>This ŋation has been deleted</em>
-                <span>🪦</span>
+                <IconHeadstone />
             </div> : null}
             {nation.wiki_page_link && <a
                 href={nation.wiki_page_link}

@@ -3,7 +3,7 @@
 import {MemberProfile} from '@/api';
 import {useMemo} from 'react';
 import {SortMembers} from '@/utils';
-import {Member} from '@/components';
+import {IconDove, Member} from '@/components';
 import {Gavel} from 'lucide-react';
 import {Button, useActionChecked, useConfirm} from '@/components-client';
 import {SetMemberAccountStatus} from '@/services';
@@ -48,10 +48,10 @@ export function MemberList({
             { admin && inactive.length ? <>
                 <h3 className='mt-8 mb-2'>Banned Members</h3>
                 <div className='flex flex-col gap-4'>
-                    {inactive.map((m) => <div key={m.discord_id} className='flex flex-row gap-2 items-center'>
+                    {inactive.map((m) => <div key={m.discord_id} className='flex flex-row gap-1 items-center'>
                         <Button onClick={() => SetAccountStatus(m, true)} className='
                             !bg-transparent !hover:bg-transparent
-                        '><span className='hover:brightness-130 transition duration-300'>🕊️</span></Button>
+                        '><span className='hover:brightness-130 transition duration-300'><IconDove />️</span></Button>
                         <Member member={m}/>
                     </div>)}
                 </div>

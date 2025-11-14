@@ -5,13 +5,13 @@ import Link from 'next/link';
 import React, {ReactNode} from 'react';
 import {auth, signIn} from '@/auth';
 import {GetOwnDiscordProfile, GetMeImpl} from '@/services';
-import {MemberAvatar} from '@/components';
+import {IconShield, MemberAvatar} from '@/components';
 import {Toaster} from 'react-hot-toast';
 import {ConfirmDialogProvider} from '@/components-client';
 
 const font = Noto_Sans({
     preload: true,
-    fallback: ['sans-serif'],
+    fallback: ['system-ui', 'sans-serif'],
     weight: '400',
     subsets: ['latin', 'latin-ext'],
 });
@@ -73,7 +73,7 @@ async function Sidebar() {
                                 <div className='leading-8 select-none text-ell-nowrap'>
                                     {profile.display_name}
                                 </div>
-                                {profile.administrator ? <span className='select-none -ml-1'>🛡️</span> : null}
+                                {profile.administrator ? <IconShield /> : null}
                             </div>
                         </div>
                         : <form
