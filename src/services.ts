@@ -90,13 +90,16 @@ export const AddMemberToNation = ActionClient.inputSchema(z.object({
     // If this changed something, and this member has no selected nation to represent,
     // set this ŋation as the selected ŋation, but only if the nation is not an observer
     // nation since those can’t vote in the first place.
-    if (res.count && !nation.observer && !member.represented_nation) {
-        await db`
-            UPDATE members
-            SET represented_nation = ${nation.id}
-            WHERE discord_id = ${member.discord_id}
-        `
-    }
+    if (
+        res.count &&
+        !nation.observer &&
+        !nation.deleted &&
+        !member.represented_nation
+    ) await db`
+        UPDATE members
+        SET represented_nation = ${nation.id}
+        WHERE discord_id = ${member.discord_id}
+    `
 
     revalidatePath(`/nations/${nation_id}`)
 }))
@@ -518,6 +521,51 @@ export const SetNationStatus = ActionClient.inputSchema(z.object({
     revalidatePath(`/nations/${nation_id}`)
 }))
 
+/** Cast a vote on an admission. */
+export const VoteAdmission = ActionClient.inputSchema(z.object({
+    vote: z.boolean(),
+    admission_id: z.bigint(),
+})).action(Wrap(async ({ parsedInput: { vote, admission_id } }) => {
+    const me = await GetLoggedInMemberOrThrow()
+    const admission = await GetAdmissionOrThrow(admission_id)
+
+    // Closed admissions can no longer be voted on.
+    if (admission.closed) Forbidden('Admission is already closed')
+
+    // A user can’t vote for themselves.
+    if (admission.discord_id === me.discord_id) Forbidden('You cannot vote on your own admission')
+
+    // A user must have registered an active ŋation before they can vote.
+    const nation = await GetNationForVote(me, false)
+
+    // Record the vote.
+    await db.transaction(async tx => {
+        const res = await tx`
+            INSERT OR IGNORE INTO admission_votes (admission, member, nation, vote)
+            VALUES (${admission.id}, ${me.discord_id}, ${nation.id}, ${vote})
+            ON CONFLICT (admission, nation)
+            DO UPDATE SET member = ${me.discord_id}, vote = ${vote}
+            RETURNING ROWID -- Return the rowid to check if something changed
+        `
+        if (res.length === 0) return
+
+        // We need to check if this causes the admission to pass; the way this works
+        // is basically like constitutional support, except that it requires 50% of
+        // all members.
+        const quorum = await GetNationCountForQuorum(tx)
+        const in_favour = await Scalar(tx`
+            SELECT SUM(IIF(vote == 1, 1, 0)) as value
+            FROM admission_votes
+            WHERE admission = ${admission.id}
+        `)
+
+        // '>', not '>='!
+        if (in_favour * 2n > quorum) await PassAdmissionImpl(admission)
+    })
+
+    RevalidateAdmission(admission)
+}))
+
 /** Cast a vote on a motion. */
 export const VoteMotion = ActionClient.inputSchema(z.object({
     vote: z.boolean(),
@@ -576,7 +624,7 @@ async function GetMeAndNation(nation_id: bigint) {
 }
 
 async function GetNationForVote(member: MemberProfile, allow_admins: boolean): Promise<NationProfile> {
-    if (!member.represented_nation) Forbidden()
+    if (!member.represented_nation) Forbidden('You need to choose a represented ŋation to vote')
     const nation = await GetNation(member.represented_nation) ?? InternalServerError();
     await CheckHasAccessToNationImpl(member, nation, false, allow_admins);
     return nation
@@ -592,20 +640,20 @@ async function CheckHasAccessToNationImpl(
     if (member.administrator && allow_admins) return
 
     // Inactive nations cannot be altered or vote.
-    if (nation.deleted) Forbidden('Nation has been deleted')
+    if (nation.deleted) Forbidden('Ŋation has been deleted')
 
     // Otherwise, only representatives can vote for a nation.
-    const { ruler } = await One<{ruler: boolean}>(db`
+    const { ruler } = await One<{ ruler: boolean }>(db`
         SELECT ruler FROM memberships
         WHERE member = ${member.discord_id}
         AND nation = ${nation.id}
         LIMIT 1
-    `) ?? Forbidden()
+    `) ?? Forbidden('You cannot vote for this ŋation as you’re not a member')
 
     // Ok, the user is a member; if we requested edit access, check
     // that they’re also a ruler.
     if (require_edit_access && !ruler)
-        Forbidden()
+        Forbidden('Only rulers can edit a ŋation')
 }
 
 export async function CheckHasEditAccessToNation(
@@ -688,7 +736,7 @@ export async function GetNation(id: bigint): Promise<NationProfile | null> {
     `)
 }
 
-async function GetNationCountForQuorum(sql: Bun.SQL | Bun.TransactionSQL): Promise<bigint> {
+async function GetNationCountForQuorum(sql: Bun.SQL): Promise<bigint> {
     return Scalar(sql`
         SELECT COUNT(*) AS value FROM (
             SELECT 1 FROM nations

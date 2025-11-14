@@ -4,7 +4,7 @@ import {Admission, MemberProfile} from '@/api';
 import {Button, useActionChecked, useConfirm} from '@/components-client';
 import {useRouter} from 'next/navigation';
 import {VoteDialog} from '@/app/motions/motion';
-import {DeleteAdmission, PassAdmission} from '@/services';
+import {DeleteAdmission, PassAdmission, VoteAdmission} from '@/services';
 import toast from 'react-hot-toast';
 
 export function AdmissionControls({
@@ -18,6 +18,7 @@ export function AdmissionControls({
     const { confirm } = useConfirm()
     const delete_admission = useActionChecked(DeleteAdmission)
     const pass_admission = useActionChecked(PassAdmission)
+    const vote_admission = useActionChecked(VoteAdmission)
     const can_edit = me?.administrator || (!admission.closed && admission.discord_id === me?.discord_id)
     const can_vote = !admission.closed && me?.represented_nation && me.discord_id !== admission.discord_id
 
@@ -38,7 +39,10 @@ export function AdmissionControls({
     }
 
     function Vote(vote: boolean) {
-        toast.error("TODO")
+        vote_admission({
+            admission_id: admission.id,
+            vote
+        })
     }
 
     return <div className='flex gap-8 mt-6 justify-center'>
