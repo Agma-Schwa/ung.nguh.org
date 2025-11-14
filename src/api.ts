@@ -37,14 +37,15 @@ export type MemberProfile = PartialMember & {
 };
 
 /**
- * UŊ Ŋation with some data missing.
+ * Ŋation data with some fields potentially missing; this is used for APIs
+ * that also have to display ŋations that haven’t been admitted yet.
  */
 export type NationPartial = {
     id?: bigint,
     name: string,
     banner_url: string | null,
     observer?: bool,
-    deleted: bool,
+    deleted?: bool,
 }
 
 /**

@@ -28,14 +28,16 @@ export async function MotionList({
     members,
     meetings,
     interactive,
+    hide_status,
 }: {
     motions: Motion[],
     members: MemberProfile[],
     meetings: Meeting[],
     interactive?: boolean,
+    hide_status?: boolean,
 }) {
     return (
-        <div className='grid grid-cols-[auto_1fr_auto] gap-4 leading-8'>
+        <div className={`grid ${hide_status ? 'grid-cols-[auto_1fr]' : 'grid-cols-[auto_1fr_auto]'} gap-4 leading-8`}>
             {motions.map((motion) => {
                 const member = members.find(m => m.discord_id === motion.author)!
                 const meeting = meetings.find(m => m.id === motion.meeting)
@@ -47,14 +49,14 @@ export async function MotionList({
                         <span className='[font-variant:small-caps] text-neutral-300'> [{type}]</span>
                         <span>{GetMotionEmoji(motion)}</span>
                     </Link></div>
-                    <div className='flex gap-2 justify-end'>
+                    {!hide_status ? <div className='flex gap-2 justify-end'>
                         <span> {
                               motion.closed ? 'Closed'
                             : meeting       ? `Sched. f. ${meeting.name}`
                                             : 'Not Scheduled'
                         } </span>
                         {interactive ? <ScheduleMotionButton motion={motion} meetings={meetings} /> : null}
-                    </div>
+                    </div> : null }
                 </Fragment>
             })}
         </div>

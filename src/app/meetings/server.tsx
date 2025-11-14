@@ -9,9 +9,10 @@ export async function MeetingInfo({
 }) {
     const motions = await db`SELECT * FROM motions WHERE meeting = ${meeting.id}` as Motion[]
     const members = await GetAllMembers()
-    return (
-        <>
-            <MotionList motions={motions} members={members} meetings={[meeting]} />
-        </>
-    )
+    return <MotionList
+        motions={motions}
+        members={members}
+        meetings={[meeting]}
+        hide_status={true}
+    />
 }

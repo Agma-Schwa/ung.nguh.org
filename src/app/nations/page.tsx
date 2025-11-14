@@ -39,9 +39,11 @@ export default async function() {
                     {me?.administrator ? `, Deleted Ŋations: ${num_deleted}` : ''}
                 </p>
                 {!me ? <List nations={visible} /> : <div>
-                    <h3 className='mb-6'>My Ŋations</h3>
-                    <List nations={my_nations} />
-                    <h3 className='mb-6'>Other Ŋations</h3>
+                    {my_nations.length !== 0 ? <>
+                        <h3 className='mb-6'>My Ŋations</h3>
+                        <List nations={my_nations} />
+                        <h3 className='mb-6'>Other Ŋations</h3>
+                    </> : null}
                     <List nations={other_nations} />
                     {me.administrator ? <>
                         <h3 className='mb-6'>Deleted Ŋations</h3>

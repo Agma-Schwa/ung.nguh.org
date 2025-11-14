@@ -70,7 +70,7 @@ export function Nation({
     starred,
 }: {
     nation: NationPartial,
-    member?: MemberProfile | null,
+    member?: PartialMember | null,
     starred?: boolean | null
 }) {
     return (

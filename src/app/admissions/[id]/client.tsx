@@ -22,8 +22,10 @@ export function AdmissionControls({
     const can_vote = !admission.closed && me?.represented_nation && me.discord_id !== admission.discord_id
 
     async function Delete() {
-        if (await confirm("Are you sure you want to delete this admission?"))
-            delete_admission({ admission_id: admission.id })
+        if (await confirm("Are you sure you want to delete this admission?")) {
+            delete_admission({admission_id: admission.id})
+            router.replace('/admissions')
+        }
     }
 
     function Edit() {
