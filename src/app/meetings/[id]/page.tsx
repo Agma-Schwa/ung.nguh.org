@@ -1,5 +1,7 @@
-import {notFound} from 'next/navigation';
-import {Meeting} from '@/app/meetings/server';
+import {notFound, redirect} from 'next/navigation';
+import {MeetingInfo} from '@/app/meetings/server';
+import {GetActiveMeeting, GetMeetingOrThrow} from '@/services';
+import {Stripe} from '@/components';
 
 export default async function({
     params
@@ -8,5 +10,13 @@ export default async function({
 }) {
     const { id } = await params
     try { BigInt(id); } catch (e) { notFound() }
-    return <Meeting id={BigInt(id)} />
+    const meeting = await GetMeetingOrThrow(BigInt(id))
+    const active = await GetActiveMeeting()
+    if (meeting.id === active) redirect('/')
+    return (
+        <>
+            <Stripe>Meeting {meeting.name}</Stripe>
+            <MeetingInfo meeting={meeting} />
+        </>
+    )
 }

@@ -83,6 +83,9 @@ export type Meeting = {
     name: string;
 }
 
+/** Used to indicate that there is no active meeting. */
+export const NO_ACTIVE_MEETING: bigint = 0n
+
 export type Vote = {
     motion: bigint;
     member: bigint;

@@ -112,7 +112,6 @@ export function Button({
             disabled={disabled}
             className={twMerge(`
                 text-(size:--text-size)
-                height-(--text-size)
                 block
                 px-2 transition-[background] duration-300 select-none
 
@@ -238,16 +237,18 @@ export function Label({
 }
 
 export function Select({
+    className,
     onChange,
     defaultValue,
     children,
 }: {
+    className?: string
     onChange: (e: string) => void,
     defaultValue?: string,
     children: ReactNode,
 }) {
     return <select
-        className='border border-neutral-500 bg-neutral-700 pl-1 my-4'
+        className={twMerge('border border-neutral-500 bg-neutral-700 pl-1', className)}
         onChange={(e) => onChange(e.target.value)}
         defaultValue={defaultValue}
     >{children}</select>

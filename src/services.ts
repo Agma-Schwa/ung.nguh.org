@@ -1,6 +1,6 @@
 'use server'
 
-import {GlobalVar, Meeting, MemberProfile, Motion, MotionType, NationProfile} from '@/api';
+import {GlobalVar, Meeting, MemberProfile, Motion, MotionType, NationProfile, NO_ACTIVE_MEETING} from '@/api';
 import {Session} from '@auth/core/types';
 import {SQL} from 'bun';
 import {auth} from '@/auth';
@@ -110,6 +110,16 @@ export const CloseMotionAsRejected = ActionClient.inputSchema(z.object({
     `
 
     RevalidateMotion(motion)
+}))
+
+/** Create a new meeting. */
+export const CreateMeeting = ActionClient.inputSchema(z.object({
+    name: z.string().trim().min(1).max(50)
+})).action(Wrap(async ({ parsedInput: { name } }) => {
+    const me = await GetLoggedInMemberOrThrow()
+    if (!me.administrator) Forbidden()
+    await db`INSERT INTO meetings (name) VALUES (${name})`
+    revalidatePath('/')
 }))
 
 /** Delete a motion. */
@@ -310,7 +320,7 @@ export const ScheduleMotion = ActionClient.inputSchema(z.object({
 })).action(Wrap(async ({ parsedInput: { motion_id, meeting_id } }) => {
     await GetLoggedInMemberOrThrow()
     const motion = await GetMotionOrThrow(motion_id)
-    const meeting = meeting_id !== 0n ? await GetMeetingOrThrow(meeting_id) : null
+    const meeting = meeting_id !== NO_ACTIVE_MEETING ? await GetMeetingOrThrow(meeting_id) : null
     if (motion.closed) BadRequest("Motion already closed")
 
     // Clear the meeting if null was passed, else set it to the meeting’s ID.
@@ -322,6 +332,25 @@ export const ScheduleMotion = ActionClient.inputSchema(z.object({
 
     RevalidateMotion(motion)
     if (meeting) revalidatePath(`/meeting/${meeting.id}`)
+}))
+
+/** Set the active meeting. */
+export const SetActiveMeeting = ActionClient.inputSchema(z.object({
+    meeting_id: z.bigint(),
+})).action(Wrap (async ({ parsedInput: { meeting_id } }) => {
+    const me = await GetLoggedInMemberOrThrow()
+    if (!me.administrator) Forbidden()
+
+    // Check that the meeting actually exists.
+    if (meeting_id !== NO_ACTIVE_MEETING) await GetMeetingOrThrow(meeting_id)
+    await db`
+        UPDATE global_vars
+        SET value = ${meeting_id}
+        WHERE id = ${GlobalVar.ActiveMeeting}
+    `
+
+    revalidatePath('/')
+    revalidatePath('/meetings')
 }))
 
 /** Demote a nation or mark it as deleted. */
@@ -492,7 +521,7 @@ export async function GetActiveMeeting(): Promise<bigint> {
         WHERE id = ${GlobalVar.ActiveMeeting} LIMIT 1
     `)
 
-    return obj?.value ?? 0n
+    return obj?.value ?? NO_ACTIVE_MEETING
 }
 
 export async function GetAllMembers(): Promise<MemberProfile[]> {
