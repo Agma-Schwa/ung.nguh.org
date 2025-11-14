@@ -37,7 +37,7 @@ export function AddMemberDialog({
                 {label: 'Cancel'},
             ]}
         >   <select ref={select} className='bg-neutral-600 m-auto' name='discord_id'>
-                {not_members.map(m => <option key={m.discord_id} value={String(m.discord_id)}>
+                {not_members.filter(m => !m.staff_only).map(m => <option key={m.discord_id} value={String(m.discord_id)}>
                     {m.display_name}
                 </option>)}
             </select>

@@ -660,11 +660,11 @@ export async function GetActiveMeeting(): Promise<bigint> {
 }
 
 export async function GetAllMembers(): Promise<MemberProfile[]> {
-    return await db`SELECT * FROM members ORDER BY display_name` as MemberProfile[]
+    return await db`SELECT * FROM members ORDER BY display_name COLLATE NOCASE` as MemberProfile[]
 }
 
 export async function GetAllNations(): Promise<NationProfile[]> {
-    return await db`SELECT * FROM nations ORDER BY name` as NationProfile[]
+    return await db`SELECT * FROM nations ORDER BY name COLLATE NOCASE` as NationProfile[]
 }
 
 export async function GetMember(id: bigint): Promise<MemberProfile | null> {

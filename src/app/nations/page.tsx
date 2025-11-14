@@ -20,7 +20,7 @@ export default async function() {
     }
 
     const me = await GetMe()
-    const all_nations = await db`SELECT * FROM nations ORDER BY name` as NationProfile[]
+    const all_nations = await db`SELECT * FROM nations ORDER BY name COLLATE NOCASE` as NationProfile[]
     const my_nation_ids = await GetMyNationIds(me)
     const not_deleted = all_nations.filter(n => !n.deleted)
     const visible = me?.administrator ? all_nations : not_deleted
