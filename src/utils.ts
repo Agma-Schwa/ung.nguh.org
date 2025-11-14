@@ -1,6 +1,5 @@
-import {Admission, MemberProfile, Motion, MotionType} from '@/api';
+import {MemberProfile, Motion, MotionType} from '@/api';
 import {z} from 'zod';
-import {GetMember} from '@/services';
 
 export const AdmissionSchema = z.object({
     name: z.string().trim().min(1).max(200),
@@ -25,6 +24,11 @@ export function CanEditMotion(
     if (member.administrator) return true
     if (motion.locked) return false
     return motion.author === member.discord_id
+}
+
+/** Whether a motion can be voted on. */
+export function IsVotable(m: Motion) {
+    return !m.closed || (m.type === MotionType.Constitutional && m.passed && !m.supported)
 }
 
 export function SortMembers(members: readonly MemberProfile[]): MemberProfile[] {

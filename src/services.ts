@@ -17,7 +17,7 @@ import {createSafeActionClient} from 'next-safe-action';
 import {z} from 'zod';
 import {revalidatePath} from 'next/cache';
 import {notFound} from 'next/navigation';
-import {AdmissionSchema, CanEditMotion, MotionSchema} from '@/utils';
+import {AdmissionSchema, CanEditMotion, IsVotable, MotionSchema} from '@/utils';
 
 // =============================================================================
 //  Globals and Types
@@ -126,7 +126,7 @@ export const CloseMotionAsRejected = ActionClient.inputSchema(z.object({
             supported = FALSE,
             passed = FALSE,
             closed = TRUE
-        WHERE id = ${motion.id} AND closed = 0 -- Disallow force-closing already-closed motions.
+        WHERE id = ${motion.id}
     `
 
     RevalidateMotion(motion)
@@ -708,7 +708,7 @@ export const VoteMotion = ActionClient.inputSchema(z.object({
     const motion = await GetMotionOrThrow(motion_id)
 
     // Only enabled motions can be voted on.
-    if (!motion.enabled) Forbidden()
+    if (!motion.enabled || !IsVotable(motion)) Forbidden()
 
     // A user must have registered an active ŋation before they can vote.
     const nation = await GetNationForVote(me)
@@ -1076,12 +1076,6 @@ async function SendWebhookMessage(content: string, ping = false) {
 }
 
 async function UpdateMotionAfterVote(tx: Bun.TransactionSQL, motion: Motion) {
-    const is_constitutional = motion.type === MotionType.Constitutional
-
-    // The motion’s outcome has already been decided, and if it is a constitutional
-    // motion, it already has support.
-    if (motion.closed && (!is_constitutional || motion.supported)) return
-
     // Collect all votes for this motion.
     const res = await One<{ in_favour: bigint, total: bigint }>(tx`
         SELECT SUM(IIF(vote == 1, 1, 0)) as in_favour, COUNT(*) as total
@@ -1090,6 +1084,7 @@ async function UpdateMotionAfterVote(tx: Bun.TransactionSQL, motion: Motion) {
     `)
 
     // Check if the motion for sure passed or was rejected.
+    const is_constitutional = motion.type === MotionType.Constitutional
     const { in_favour, total } = res!
     if (!motion.closed) {
         // The quorum was fixed when the motion was put to a vote, and we need 50% of those to

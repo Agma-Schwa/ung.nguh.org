@@ -13,6 +13,7 @@ import {
 } from '@/services';
 import Markdown from 'react-markdown';
 import {VoteDialog} from '@/app/motions/motion';
+import {IsVotable} from '@/utils';
 
 export function MotionButtons({
     me,
@@ -94,7 +95,7 @@ export function MotionButtons({
                 <Button onClick={EnableOrDisable}> {motion.enabled ? 'Disable' : 'Enable'} Voting</Button> : null }
             { me?.administrator && (has_votes || motion.closed) ?
                 <Button onClick={Reset} danger={true}>Reset</Button> : null}
-            { me?.administrator && !motion.closed ? <Button onClick={CloseAsRejected} danger={true}>
+            { me?.administrator && IsVotable(motion) ? <Button onClick={CloseAsRejected} danger={true}>
                 Close as Rejected</Button> : null }
             { can_edit && !motion.locked ? <Button onClick={Delete} danger={true}>Delete</Button> : null}
         </div>

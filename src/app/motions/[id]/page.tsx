@@ -41,7 +41,8 @@ export default async function({
             </div>
 
             <div className='text-center my-8 italic m-auto mx-auto'> {
-                  votes.length !== 0 && motion.closed ? `Voted on During Meeting ${meeting?.name}`
+                  motion.enabled                      ? `Currently Being Voted on`
+                : votes.length !== 0 && motion.closed ? `Voted on During Meeting ${meeting?.name}`
                 : meeting                             ? `Scheduled for Meeting ${meeting.name}`
                                                       : null
             } </div>
