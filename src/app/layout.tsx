@@ -52,7 +52,7 @@ async function Sidebar() {
                 <Link href='/'>Current Meeting</Link>
                 <Link href='/meetings'>Past Meetings</Link>
             </Section>
-            {session ? <Section title='Actions'>
+            { session ? <Section title='Actions'>
                 { me ? <Link href='/motions/new'>Create a Motion</Link> : null }
                 <Link href='/admissions/new'>Create a Ŋation</Link>
             </Section> : null }

@@ -22,6 +22,32 @@ export function CheckSuccess(data: any, success_message?: string) {
         toast.success(success_message)
 }
 
+/** Variant of useActionChecked() that exposes more state */
+export function useActionCheckedExt<
+    ServerError,
+    S extends z.Schema,
+    CVE,
+    Data,
+>(
+    action: HookSafeActionFn<ServerError, S, CVE, Data>,
+    onSuccess?: (data: Data) => void
+) {
+    const a = useAction(action, {
+        onSuccess: ({ data }) => {
+            CheckSuccess(data)
+            a.reset()
+            onSuccess?.(data)
+        },
+        onError: (e) => {
+            console.error(e)
+            toast.error('Invalid form data')
+            a.reset()
+        }
+    })
+
+    return a
+}
+
 /** Wrapper around useAction() that actually reports errors to the user. */
 export function useActionChecked<
     ServerError,
@@ -30,24 +56,9 @@ export function useActionChecked<
     Data,
 >(
     action: HookSafeActionFn<ServerError, S, CVE, Data>,
-    onSuccess?: () => void
-) : (input: z.input<S>) => void {
-    const { execute, reset } = useAction(action, {
-        onSuccess: ({ data }) => {
-            CheckSuccess(data)
-            reset()
-            onSuccess?.()
-        },
-        onError: (e) => {
-            console.error(e)
-            toast.error('Invalid form data')
-            reset()
-        }
-    })
-
-    // Don’t know how to write a proper type for this, but type checking
-    // at the call site works, and that’s all I care about.
-    return execute as any
+    onSuccess?: (data: Data) => void
+) {
+    return useActionCheckedExt(action, onSuccess).execute
 }
 
 export function IsSuccess(data: any): boolean {
@@ -69,12 +80,14 @@ export function ActionForm({
     action,
     returnTo,
     children,
-    extra_buttons
+    extra_buttons,
+    isPending
 }: {
     action: () => void,
     returnTo: string,
     children: ReactNode,
     extra_buttons?: ReactNode,
+    isPending?: boolean
 }) {
     const router = useRouter()
     return (
@@ -83,9 +96,9 @@ export function ActionForm({
                 {children}
             </div>
             <div className='flex justify-center gap-6 mt-10'>
-                <Button onClick={action}>Submit</Button>
+                <Button onClick={action} disabled={isPending}>Submit</Button>
                 {extra_buttons}
-                <Button onClick={() => router.push(returnTo)}>Cancel</Button>
+                <Button onClick={() => router.push(returnTo)} disabled={isPending}>Cancel</Button>
             </div>
         </div>
     )

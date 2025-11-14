@@ -54,6 +54,12 @@ function Unauthorised(message: string = 'Unauthorized'): never {
 // =============================================================================
 const ActionClient = createSafeActionClient();
 
+const MotionSchema = z.object({
+    type: z.literal([MotionType.Unsure, MotionType.Legislative, MotionType.Executive, MotionType.Constitutional]),
+    title: z.string().trim().min(1).max(500),
+    text: z.string().trim().min(1).max(10000),
+})
+
 /** Add a member to a ŋation. */
 export const AddMemberToNation = ActionClient.inputSchema(z.object({
     member_to_add: z.bigint(),
@@ -122,6 +128,30 @@ export const CreateMeeting = ActionClient.inputSchema(z.object({
     revalidatePath('/')
 }))
 
+/** Create a new motion. */
+export const CreateMotion = ActionClient.inputSchema(
+    MotionSchema
+).action(Wrap(async ({ parsedInput: { type, title, text } }) => {
+    const me = await GetLoggedInMemberOrThrow()
+    const res = await One<{ id: bigint }>(db`
+        INSERT INTO motions (author, type, title, text)
+        VALUES (${me.discord_id}, ${type}, ${title}, ${text})
+        RETURNING id
+    `)
+
+    // If a meeting is active, schedule it automatically.
+    const id = res!.id
+    const active = await GetActiveMeeting()
+    if (active !== NO_ACTIVE_MEETING) await db`
+        UPDATE motions
+        SET meeting = ${active}
+        WHERE id = ${id}
+    `
+
+    revalidatePath('/motions')
+    return { id }
+}))
+
 /** Delete a motion. */
 export const DeleteMotion = ActionClient.inputSchema(z.object({
     motion_id: z.bigint(),
@@ -136,11 +166,8 @@ export const DeleteMotion = ActionClient.inputSchema(z.object({
 }))
 
 /** Edit a motion. */
-export const EditMotion = ActionClient.inputSchema(z.object({
+export const EditMotion = ActionClient.inputSchema(MotionSchema.extend({
     motion_id: z.bigint(),
-    type: z.literal([MotionType.Unsure, MotionType.Legislative, MotionType.Executive, MotionType.Constitutional]),
-    title: z.string().trim().min(1).max(500),
-    text: z.string().trim().min(1).max(10000),
 })).action(Wrap(async ({ parsedInput: { motion_id, type, title, text } }) => {
     const me = await GetLoggedInMemberOrThrow()
     const motion = await GetMotionOrThrow(motion_id)

@@ -40,8 +40,10 @@ export function MotionButtons({
     }
 
     async function Delete() {
-        if (await confirm("Delete this motion? THIS CANNOT BE UNDONE!"))
-            delete_motion({ motion_id: motion.id })
+        if (await confirm("Delete this motion? THIS CANNOT BE UNDONE!")) {
+            delete_motion({motion_id: motion.id})
+            router.replace('/motions') // Replace not push since the motion is gone.
+        }
     }
 
     function Edit() {
