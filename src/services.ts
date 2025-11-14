@@ -513,6 +513,23 @@ export const SetActiveMeeting = ActionClient.inputSchema(z.object({
     revalidatePath('/meetings')
 }))
 
+/** Ban or unban a user. */
+export const SetMemberAccountStatus = ActionClient.inputSchema(z.object({
+    member_id: z.bigint(),
+    active: z.boolean()
+})).action(Wrap (async ({ parsedInput: { member_id, active } }) => {
+    const me = await GetLoggedInMemberOrThrow()
+    const member = await GetMember(member_id) ?? notFound()
+    if (!me.administrator) Forbidden()
+    if (member.administrator) Forbidden("Cannot ban an administrator")
+    await db`
+        UPDATE members
+        SET active = ${active}
+        WHERE discord_id = ${member_id}
+    `
+    revalidatePath('/members')
+}))
+
 /** Demote a nation or mark it as deleted. */
 export const SetNationStatus = ActionClient.inputSchema(z.object({
     nation_id: z.bigint(),
@@ -677,10 +694,19 @@ export const VoteMotion = ActionClient.inputSchema(z.object({
 
 // This abomination of a function compensates for the fact that NextJS is
 // too stupid to allow us to return errors from actions in a sensible manner.
+//
+// The silver lining is that this wrapper effectively acts as a kind of middleware,
+// which just happens to be what we need to perform some early access checks.
 function Wrap<A extends any[]>(callable: (...args: [...A]) => Promise<any>) {
     return async (...args: [...A]): Promise<any> => {
-        try { return await callable(...args) }
-        catch (e: unknown) {
+        try {
+            // Prevent inactive members from taking any action.
+            const me = await GetMe()
+            if (me !== null && !me.active) Forbidden()
+
+            // Forward the request.
+            return await callable(...args)
+        } catch (e: unknown) {
             if (e && typeof e === 'object' && 'status' in e && 'message' in e) return e
             throw e
         }

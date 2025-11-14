@@ -49,20 +49,6 @@ export function Member({
     )
 }
 
-/** A list of UŊ members. */
-export function MemberList({
-    members
-}: {
-    members: MemberProfile[]
-}) {
-    let members_sorted = useMemo(() => SortMembers(members), [members])
-    return (
-        <div className='flex flex-col gap-4'>
-            {members_sorted.map((m) => <Member key={m.discord_id} member={m}/>)}
-        </div>
-    )
-}
-
 /** A ŋation. */
 export function Nation({
     nation,

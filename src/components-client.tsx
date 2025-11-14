@@ -151,7 +151,7 @@ export function XButton({
             disabled={!enabled}
             className={`
                 w-8 h-8 p-0 !bg-transparent enabled:cursor-pointer
-                ${enabled ? "hover:invert transition-[filter]" : "grayscale"}
+                ${enabled ? "hover:invert transition-[filter] duration-300" : "grayscale"}
             `}
         >❌</button>
     )
