@@ -1,5 +1,5 @@
-import {Stripe} from '@/components';
-import {db, GetActiveMeeting, GetMe} from '@/services';
+import {Nation, Stripe} from '@/components';
+import {db, GetActiveMeeting, GetAllNations, GetMe, GetParticipationEnabled} from '@/services';
 import {ActiveMeetingControls, NoActiveMeetingControls} from '@/app/client';
 import {MeetingInfo} from '@/app/meetings/server';
 import {Meeting, NO_ACTIVE_MEETING} from '@/api';
@@ -26,11 +26,24 @@ export default async function CurrentMeeting() {
     }
 
     const meeting = meetings.find(m => m.id === active)!
+    const nations = await GetAllNations()
+    const participants = await db`SELECT nation FROM meeting_participants` as { nation: bigint }[]
+    const enable_participation = await GetParticipationEnabled()
     return (
         <>
-            <Stripe>Current Meeting</Stripe>
-            { me?.administrator ? <ActiveMeetingControls/> : null }
+            <Stripe>Agenda</Stripe>
             <MeetingInfo meeting={meeting} />
+
+            { enable_participation || me?.administrator ? <h2 className='mt-10 mb-6 text-center'>Participants</h2> : null }
+            <ActiveMeetingControls
+                me={me}
+                enable_participation={!!enable_participation}
+                participating={!!participants.find(p => p.nation === me?.represented_nation)}
+            />
+
+            <div className='flex flex-col gap-4'>
+                {participants.map(p => <Nation key={p.nation} nation={nations.find(n => n.id === p.nation)!} />)}
+            </div>
         </>
     )
 }

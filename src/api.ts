@@ -79,6 +79,9 @@ export type MotionType = 0n | 1n | 2n | 3n
 export const GlobalVar = {
     /** The Id of the active meeting. */
     ActiveMeeting: 0n,
+
+    /** Whether members can join the active meeting. */
+    AllowMembersToJoinTheActiveMeeting: 1n,
 } as const
 
 /**

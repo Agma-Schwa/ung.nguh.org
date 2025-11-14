@@ -1,9 +1,15 @@
 'use client'
 
-import {Button, Select, TextInput, useActionChecked} from '@/components-client';
-import {Meeting, NO_ACTIVE_MEETING} from '@/api';
+import {Button, Select, TextInput, useActionChecked, useConfirm} from '@/components-client';
+import {Meeting, MemberProfile, NO_ACTIVE_MEETING} from '@/api';
 import {useState} from 'react';
-import {CreateMeeting, SetActiveMeeting} from '@/services';
+import {
+    ClearParticipants,
+    CreateMeeting,
+    EnableOrDisableMeetingParticipation,
+    JoinOrLeaveMeeting,
+    SetActiveMeeting
+} from '@/services';
 
 export function NoActiveMeetingControls({
     meetings,
@@ -37,15 +43,49 @@ export function NoActiveMeetingControls({
     )
 }
 
-export function ActiveMeetingControls() {
+export function ActiveMeetingControls({
+    me,
+    enable_participation,
+    participating,
+}: {
+    me: MemberProfile | null,
+    enable_participation: boolean,
+    participating: boolean,
+}) {
+    const { confirm } = useConfirm()
     const set_active_meeting = useActionChecked(SetActiveMeeting)
-    function EndMeeting() {
+    const enable_or_disable_participation = useActionChecked(EnableOrDisableMeetingParticipation)
+    const join_or_leave = useActionChecked(JoinOrLeaveMeeting)
+    const clear_participants = useActionChecked(ClearParticipants)
+    function SetInactive() {
         set_active_meeting({ meeting_id: NO_ACTIVE_MEETING })
     }
 
+    function EnableOrDisableParticipation() {
+        enable_or_disable_participation({ enable: !enable_participation })
+    }
+
+    function JoinOrLeave() {
+        join_or_leave({ join: !participating })
+    }
+
+    async function Clear() {
+        if (await confirm('Remove ALL meeting participants?'))
+            clear_participants({})
+    }
+
     return (
-        <div className='flex gap-6 justify-center mb-6'>
-            <Button onClick={EndMeeting}>End Meeting</Button>
-        </div>
+        <>
+            { me && <div className='flex gap-6 justify-center mb-6'>
+                { me.administrator ? <Button onClick={SetInactive}>Clear Active Meeting</Button> : null }
+                { me.administrator ? <Button onClick={EnableOrDisableParticipation}>
+                    {enable_participation ? 'Disable' : 'Enable'} Participation
+                </Button> : null }
+                { enable_participation && me.represented_nation ? <Button onClick={JoinOrLeave}>
+                    {participating ? 'Leave' : 'Join'} Meeting
+                </Button> : null }
+                {me.administrator ? <Button onClick={Clear} danger={true}>Reset Participants</Button> : null }
+            </div> }
+        </>
     )
 }

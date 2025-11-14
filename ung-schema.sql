@@ -119,7 +119,6 @@ CREATE TABLE IF NOT EXISTS admission_votes (
 
 CREATE TABLE IF NOT EXISTS meeting_participants (
     nation INTEGER PRIMARY KEY,
-    absentee_voter INTEGER NOT NULL DEFAULT FALSE,
     FOREIGN KEY (nation) REFERENCES nations(id) ON DELETE CASCADE
 ) STRICT;
 

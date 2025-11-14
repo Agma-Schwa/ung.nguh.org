@@ -104,6 +104,14 @@ export const AddMemberToNation = ActionClient.inputSchema(z.object({
     revalidatePath(`/nations/${nation_id}`)
 }))
 
+/** Remove all participants from a meeting. */
+export const ClearParticipants = ActionClient.inputSchema(z.object({})).action(Wrap(async() =>{
+    const me = await GetLoggedInMemberOrThrow()
+    if (!me.administrator) Forbidden()
+    await db`DELETE FROM meeting_participants` // Yes, delete all data from this table.
+    revalidatePath('/')
+}))
+
 /** Close a motion as rejected. */
 export const CloseMotionAsRejected = ActionClient.inputSchema(z.object({
     motion_id: z.bigint(),
@@ -323,6 +331,20 @@ export const EditŊation = ActionClient.inputSchema(z.object({
     revalidatePath(`/nations/${nation_id}/edit`)
 }))
 
+/** Enable or disable participation. */
+export const EnableOrDisableMeetingParticipation = ActionClient.inputSchema(z.object({
+    enable: z.boolean()
+})).action(Wrap (async ({ parsedInput: { enable }}) => {
+    const me = await GetLoggedInMemberOrThrow()
+    if (!me.administrator) Forbidden()
+    await db`
+        UPDATE global_vars
+        SET value = ${enable}
+        WHERE id = ${GlobalVar.AllowMembersToJoinTheActiveMeeting}
+    `
+    revalidatePath('/')
+}))
+
 /** Enable or disable a motion. */
 export const EnableOrDisableMotion = ActionClient.inputSchema(z.object({
     enable: z.boolean(),
@@ -352,6 +374,20 @@ export const EnableOrDisableMotion = ActionClient.inputSchema(z.object({
     }
 
     revalidatePath(`/motion/${motion.id}`)
+}))
+
+/** Join or leave the current meeting. */
+export const JoinOrLeaveMeeting = ActionClient.inputSchema(z.object({
+    join: z.boolean(),
+})).action(Wrap (async ({ parsedInput: { join }}) => {
+    const me = await GetLoggedInMemberOrThrow()
+    const nation = await GetNationForVote(me)
+    const active = await GetActiveMeeting()
+    await GetMeetingOrThrow(active) // Just ensure there is one.
+    if (!await GetParticipationEnabled()) Forbidden("Participation is currently disabled")
+    if (!join) await db`DELETE FROM meeting_participants WHERE nation = ${nation.id}`
+    else await db`INSERT OR IGNORE INTO meeting_participants (nation) VALUES (${nation.id})`
+    revalidatePath('/')
 }))
 
 /** Lock or unlock a motion. */
@@ -871,6 +907,13 @@ export async function GetOwnDiscordProfile(
 
     // If the member is not in the DB, ask the bot.
     return GetMemberProfileFromDiscord(BigInt(session.discord_id))
+}
+
+export async function GetParticipationEnabled(): Promise<bigint> {
+    return await Scalar(db`
+        SELECT value FROM global_vars
+        WHERE id = ${GlobalVar.AllowMembersToJoinTheActiveMeeting}
+    `)
 }
 
 async function GetMemberProfileFromDiscord(discord_id: bigint): Promise<MemberProfile | null> {

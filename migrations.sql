@@ -19,7 +19,7 @@ WHERE members.discord_id NOT IN (
     WHERE nations.id = members.represented_nation AND (nations.observer = TRUE OR nations.deleted = TRUE)
 );
 
--- Query to verify that the migration below is correct.
+-- Query to verify that the migration above is correct.
 SELECT members.display_name, members.represented_nation, nations.name FROM members
 JOIN nations ON members.represented_nation = nations.id
 WHERE members.discord_id NOT IN (
@@ -27,3 +27,15 @@ WHERE members.discord_id NOT IN (
     WHERE memberships.nation = members.represented_nation
 ) OR nations.observer = TRUE OR nations.deleted = TRUE;
 
+-- MIGRATION
+--
+-- The 'absentia voting' flag is repurposed to mean 'allow users to join the current meeting'.
+-- Ensure it starts out disabled.
+UPDATE global_vars
+SET value = FALSE
+WHERE id = 1;
+
+-- MIGRATION
+--
+-- We’ve completely changed how this table works.
+DROP TABLE meeting_participants; -- Make sure to also run the new CREATE TABLE stmt from ung-schema.sql.
