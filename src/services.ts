@@ -108,7 +108,7 @@ export const AddMemberToNation = ActionClient.inputSchema(z.object({
 export const ClearParticipants = ActionClient.inputSchema(z.object({})).action(Wrap(async() =>{
     const me = await GetLoggedInMemberOrThrow()
     if (!me.administrator) Forbidden()
-    await db`DELETE FROM meeting_participants` // Yes, delete all data from this table.
+    await ClearParticipantsImpl(db)
     revalidatePath('/')
 }))
 
@@ -342,11 +342,7 @@ export const EnableOrDisableMeetingParticipation = ActionClient.inputSchema(z.ob
 })).action(Wrap (async ({ parsedInput: { enable }}) => {
     const me = await GetLoggedInMemberOrThrow()
     if (!me.administrator) Forbidden()
-    await db`
-        UPDATE global_vars
-        SET value = ${enable}
-        WHERE id = ${GlobalVar.AllowMembersToJoinTheActiveMeeting}
-    `
+    await SetParticipationEnabled(db, enable)
     revalidatePath('/')
 }))
 
@@ -363,13 +359,21 @@ export const EnableOrDisableMotion = ActionClient.inputSchema(z.object({
     // Can’t enable a motion unless the meeting for it is active.
     if (motion.meeting !== active) BadRequest()
 
+    // Can’t enable a motion that has been closed.
+    if (motion.closed) BadRequest('Motion is already closed')
+
     // Do it.
     if (enable) {
-        await db`
-            UPDATE motions
-            SET enabled = TRUE, quorum = (SELECT COUNT(*) FROM meeting_participants)
-            WHERE id = ${motion.id} AND meeting = ${motion.meeting}
-        `
+        await db.transaction(async tx => {
+            // 15.6: ‘A quorum of ¼ of members (rounded up) MUST be present in a meeting to pass any motion.’
+            const participants = await Scalar(tx`SELECT COUNT(*) AS value FROM meeting_participants`)
+            const quorum = Math.max(Number(participants), Math.ceil(Number(await GetNationCountForQuorum(tx)) / 4))
+            await tx`
+                UPDATE motions
+                SET enabled = TRUE, quorum = ${quorum}
+                WHERE id = ${motion.id} AND meeting = ${motion.meeting}
+            `
+        })
     } else {
         await db`
             UPDATE motions
@@ -379,6 +383,43 @@ export const EnableOrDisableMotion = ActionClient.inputSchema(z.object({
     }
 
     revalidatePath(`/motion/${motion.id}`)
+}))
+
+/** Formally end the current meeting. */
+export const FinishMeeting = ActionClient.inputSchema(z.object({})).action(Wrap(async () => {
+    const me = await GetLoggedInMemberOrThrow()
+    const active = await GetActiveMeeting()
+    const meeting = await GetMeetingOrThrow(active)
+    if (!me.administrator) Forbidden()
+    if (meeting.finished) BadRequest('Meeting already finished!')
+    await db.transaction(async tx => {
+        // For all open motions that are part of this meeting and which have not
+        // been closed yet, recompute the quorum based on the total member count.
+        const quorum = await GetNationCountForQuorum(tx)
+        await tx`
+            UPDATE motions
+            SET quorum = ${quorum}, locked = TRUE, enabled = TRUE
+            WHERE meeting = ${active} AND closed = FALSE
+        `
+
+        // Disable meeting participation and remove all participants.
+        await SetParticipationEnabled(tx, false)
+        await ClearParticipantsImpl(tx)
+
+        // Clear the active meeting.
+        await SetActiveMeetingImpl(tx, NO_ACTIVE_MEETING)
+
+        // Mark that the meeting is finished.
+        await tx`
+            UPDATE meetings
+            SET finished = TRUE
+            WHERE id = ${meeting.id}
+        `
+    })
+
+    await SendWebhookMessage(`Meeting ${meeting.name} has concluded`)
+    revalidatePath('/')
+    revalidatePath('/meetings')
 }))
 
 /** Join or leave the current meeting. */
@@ -522,10 +563,12 @@ export const ScheduleMotion = ActionClient.inputSchema(z.object({
     await GetLoggedInMemberOrThrow()
     const motion = await GetMotionOrThrow(motion_id)
     const meeting = meeting_id !== NO_ACTIVE_MEETING ? await GetMeetingOrThrow(meeting_id) : null
-    if (motion.closed) BadRequest("Motion already closed")
+    if (motion.closed) BadRequest('Motion already closed')
+    if (motion.enabled) BadRequest('Can’t reschedule a motion that is still enabled')
 
     // Clear the meeting if null was passed, else set it to the meeting’s ID.
     if (meeting) {
+        if (meeting.finished) BadRequest('Can’t schedule a motion for a finished meeting')
         await db`UPDATE motions SET meeting = ${meeting.id} WHERE id = ${motion.id}`
     } else {
         await db`UPDATE motions SET meeting = NULL WHERE id = ${motion.id}`
@@ -542,13 +585,13 @@ export const SetActiveMeeting = ActionClient.inputSchema(z.object({
     const me = await GetLoggedInMemberOrThrow()
     if (!me.administrator) Forbidden()
 
-    // Check that the meeting actually exists.
-    if (meeting_id !== NO_ACTIVE_MEETING) await GetMeetingOrThrow(meeting_id)
-    await db`
-        UPDATE global_vars
-        SET value = ${meeting_id}
-        WHERE id = ${GlobalVar.ActiveMeeting}
-    `
+    // Check that the meeting actually exists and is not finished.
+    if (meeting_id !== NO_ACTIVE_MEETING) {
+        const meeting = await GetMeetingOrThrow(meeting_id)
+        if (meeting.finished) BadRequest('Cannot set finished meeting as active')
+    }
+
+    await SetActiveMeetingImpl(db, meeting_id)
 
     revalidatePath('/')
     revalidatePath('/meetings')
@@ -1007,6 +1050,11 @@ export async function Scalar(query: SQL.Query<any>): Promise<bigint> {
 // =============================================================================
 //  Other Helpers
 // =============================================================================
+async function ClearParticipantsImpl(tx: Bun.SQL) {
+    // Yes, delete all data from this table.
+    return tx`DELETE FROM meeting_participants`
+}
+
 async function PassAdmissionImpl(admission: Admission) {
     await db.begin(async tx => {
         const result = await tx`
@@ -1084,7 +1132,23 @@ async function SendWebhookMessage(content: string, ping = false) {
     }
 }
 
-async function UpdateMotionAfterVote(tx: Bun.TransactionSQL, motion: Motion) {
+async function SetActiveMeetingImpl(tx: Bun.SQL, meeting_id: bigint) {
+    return tx`
+        UPDATE global_vars
+        SET value = ${meeting_id}
+        WHERE id = ${GlobalVar.ActiveMeeting}
+    `
+}
+
+async function SetParticipationEnabled(tx: Bun.SQL, enable: boolean) {
+    return tx`
+        UPDATE global_vars
+        SET value = ${enable}
+        WHERE id = ${GlobalVar.AllowMembersToJoinTheActiveMeeting}
+    `
+}
+
+async function UpdateMotionAfterVote(tx: Bun.SQL, motion: Motion) {
     // Collect all votes for this motion.
     const res = await One<{ in_favour: bigint, total: bigint }>(tx`
         SELECT SUM(IIF(vote == 1, 1, 0)) as in_favour, COUNT(*) as total

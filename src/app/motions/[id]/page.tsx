@@ -2,11 +2,12 @@ import {Member, Stripe, Votes} from '@/components';
 import {db, GetActiveMeeting, GetMe, GetMeeting, GetMember, GetMotionOrThrow} from '@/services';
 import {notFound} from 'next/navigation';
 import {GetMotionEmoji} from '@/app/motions/motion';
-import {Motion, MotionType, Vote} from '@/api';
+import {Meeting, MemberProfile, Motion, MotionType, Vote} from '@/api';
 import {MarkdownText, MotionButtons} from '@/app/motions/[id]/client';
 import {FormatMotionType} from '@/utils';
+import {ScheduleMotionButton} from '@/app/motions/client';
 
-function FormatMotionStatus(motion: Motion) {
+function FormatMotionResult(motion: Motion) {
     if (!motion.passed)
         return <p className='mt-4 text-rose-400'><strong>REJECTED</strong></p>
     if (motion.type != MotionType.Constitutional)
@@ -14,6 +15,42 @@ function FormatMotionStatus(motion: Motion) {
     if (motion.supported)
         return <p className='mt-4 text-emerald-400'><strong>SUPPORTED</strong></p>
     return <p className='mt-4 text-amber-200'><strong>PASSED ON CONDITION OF SUPPORT</strong></p>
+}
+
+async function RescheduleMotionButton({
+    me,
+    motion
+}: {
+    me: MemberProfile | null,
+    motion: Motion,
+}) {
+    if (!me?.administrator || motion.closed || motion.enabled) return null
+    const non_finished_meetings = await db`SELECT * FROM meetings WHERE finished = false`
+    return <ScheduleMotionButton motion={motion} non_finished_meetings={non_finished_meetings} />
+}
+
+async function MotionStatus({
+    me,
+    motion,
+    meeting,
+}: {
+    me: MemberProfile | null,
+    motion: Motion,
+    meeting: Meeting | null,
+}) {
+    if (motion.enabled) return <em>Currently Being Voted on</em>;
+    if (motion.closed) return <em>Voted on During Meeting {meeting?.name}</em>
+    if (meeting) {
+        return <>
+            <em>Scheduled for Meeting {meeting.name}</em>
+            <RescheduleMotionButton me={me} motion={motion} />
+        </>
+    }
+
+    return <>
+        <em>Not scheduled</em>
+        <RescheduleMotionButton me={me} motion={motion} />
+    </>
 }
 
 export default async function({
@@ -41,15 +78,12 @@ export default async function({
                 <Member member={member} />
             </div>
 
-            <div className='text-center my-8 italic m-auto mx-auto'> {
-                  motion.enabled                      ? `Currently Being Voted on`
-                : votes.length !== 0 && motion.closed ? `Voted on During Meeting ${meeting?.name}`
-                : meeting                             ? `Scheduled for Meeting ${meeting.name}`
-                                                      : null
-            } </div>
+            <div className='flex gap-4 justify-center text-center my-8 m-auto mx-auto'>
+                <MotionStatus me={me} motion={motion} meeting={meeting} />
+            </div>
             {votes.length !== 0 || motion.enabled || motion.closed ?
                 <Votes votes={votes} quorum={motion.quorum}/> : null}
-            {motion.closed ? FormatMotionStatus(motion) : null}
+            {motion.closed ? FormatMotionResult(motion) : null}
 
             <div className='mt-8'><MarkdownText text={motion.text} /></div>
             <MotionButtons

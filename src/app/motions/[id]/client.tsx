@@ -91,9 +91,9 @@ export function MotionButtons({
             { can_edit ? <Button onClick={LockOrUnlock} danger={!me?.administrator}>
                 {motion.locked ? 'Unlock' : 'Lock'}
             </Button> : null }
-            { active_meeting === motion.meeting && motion.locked && me?.administrator ?
+            { active_meeting === motion.meeting && motion.locked && !motion.closed && me?.administrator ?
                 <Button onClick={EnableOrDisable}> {motion.enabled ? 'Disable' : 'Enable'} Voting</Button> : null }
-            { me?.administrator && (has_votes || motion.closed) ?
+            { me?.administrator && (has_votes || motion.closed || motion.enabled) ?
                 <Button onClick={Reset} danger={true}>Reset</Button> : null}
             { me?.administrator && IsVotable(motion) ? <Button onClick={CloseAsRejected} danger={true}>
                 Close as Rejected</Button> : null }

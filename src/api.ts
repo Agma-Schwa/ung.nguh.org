@@ -106,6 +106,7 @@ export type Motion = {
 export type Meeting = {
     id: bigint;
     name: string;
+    finished: bool;
 }
 
 /** Used to indicate that there is no active meeting. */

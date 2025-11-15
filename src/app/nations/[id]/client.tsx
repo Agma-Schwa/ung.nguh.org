@@ -156,7 +156,7 @@ export function NationMemberList({
 
     return (
         <div className='flex flex-col gap-4'>
-            {members_sorted.map((m) => <div key={m.discord_id} className='flex flex-row gap-2'>
+            {members_sorted.map((m) => <div key={m.discord_id} className='flex flex-row gap-2 items-center'>
                 {can_edit ? <XButton
                     enabled={!m.ruler || is_admin}
                     onClick={() => Remove(m.discord_id)} /> : null

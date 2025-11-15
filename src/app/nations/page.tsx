@@ -1,7 +1,6 @@
 import {Nation, Stripe} from '@/components';
 import {MemberProfile, NationProfile} from '@/api'
 import {db, GetMe} from '@/services';
-import Link from 'next/link';
 import {SelectRepresentedNationWidget} from '@/app/nations/client';
 
 function List({
@@ -13,9 +12,7 @@ function List({
 }) {
     return (
         <div className='flex flex-col gap-6 mb-12 ml-2'>
-            {nations.map(n => <Link key={n.id} href={`/nations/${n.id}`}>
-                <Nation nation={n} starred={me?.represented_nation === n.id} />
-            </Link>)}
+            {nations.map(n => <Nation key={n.id} nation={n} starred={me?.represented_nation === n.id} />)}
         </div>
     )
 }

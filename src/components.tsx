@@ -3,6 +3,7 @@ import {MemberProfile, NationPartial, PartialMember, VoteCommon} from '@/api';
 import {GetAllMembers, GetAllNations} from '@/services';
 import {twMerge} from 'tailwind-merge';
 import {Noto_Color_Emoji} from 'next/font/google';
+import Link from 'next/link';
 
 const emoji_font = Noto_Color_Emoji({
     preload: true,
@@ -121,37 +122,39 @@ export function Nation({
     starred?: boolean | null
 }) {
     return (
-        <div className='flex gap-2 [--width:1.25rem] [--height:calc(var(--width)*2)] items-center'>
-            <div className='relative'>
-                <img
-                    src={URL.canParse(nation.banner_url ?? '') ? nation.banner_url! : null!}
-                    className='
-                        select-none rounded-[0_0_var(--width)_var(--width)]
-                        w-(--width) min-w-(--width)
-                        h-(--height) min-h-(--height)
-                        [outline:1px_solid] outline-neutral-500
-                    '
-                />
-                {member ? <img
-                    src={member.avatar_url}
-                    className='
-                        select-none absolute rounded-[50%]
-                        w-[calc(var(--width)*.875)]
-                        bottom-[calc(var(--width)*.1)]
-                        left-[calc(var(--width)*.06)]
-                    '
-                /> : null}
-            </div>
-            <span className='
-                [font-variant:small-caps] text-2xl ml-1
-            '>
-                <span className={`select-none text-ell-nowrap ${nation.deleted ? 'line-through text-neutral-500' : ''}`}>
-                    {nation.name}
+        <div className='flex [--width:1.25rem] [--height:calc(var(--width)*2)] items-center'>
+            <Link href={`/nations/${nation.id}`} className='flex gap-2 items-center'>
+                <div className='relative'>
+                    <img
+                        src={URL.canParse(nation.banner_url ?? '') ? nation.banner_url! : null!}
+                        className='
+                            select-none rounded-[0_0_var(--width)_var(--width)]
+                            w-(--width) min-w-(--width)
+                            h-(--height) min-h-(--height)
+                            [outline:1px_solid] outline-neutral-500
+                        '
+                    />
+                    {member ? <img
+                        src={member.avatar_url}
+                        className='
+                            select-none absolute rounded-[50%]
+                            w-[calc(var(--width)*.875)]
+                            bottom-[calc(var(--width)*.1)]
+                            left-[calc(var(--width)*.06)]
+                        '
+                    /> : null}
+                </div>
+                <span className='
+                    [font-variant:small-caps] text-2xl ml-1
+                '>
+                    <span className={`select-none text-ell-nowrap ${nation.deleted ? 'line-through text-neutral-500' : ''}`}>
+                        {nation.name}
+                    </span>
                 </span>
-                {nation.observer && !nation.deleted ? <IconEye /> : null}
-                {nation.deleted ? <IconHeadstone /> : null}
-                {starred ? <IconStar /> : null}
-            </span>
+            </Link>
+            {nation.observer && !nation.deleted ? <IconEye /> : null}
+            {nation.deleted ? <IconHeadstone /> : null}
+            {starred ? <IconStar /> : null}
         </div>
     )
 }

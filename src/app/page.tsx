@@ -1,13 +1,13 @@
 import {Nation, Stripe} from '@/components';
-import {db, GetActiveMeeting, GetAllNations, GetMe, GetParticipationEnabled} from '@/services';
+import {db, GetActiveMeeting, GetAllNations, GetMe, GetMeeting, GetParticipationEnabled} from '@/services';
 import {ActiveMeetingControls, NoActiveMeetingControls} from '@/app/client';
 import {MeetingInfo} from '@/app/meetings/server';
 import {Meeting, NO_ACTIVE_MEETING} from '@/api';
+import {notFound} from 'next/navigation';
 
 export default async function CurrentMeeting() {
     const me = await GetMe()
     const active = await GetActiveMeeting()
-    const meetings = await db`SELECT * FROM meetings ORDER BY ROWID DESC` as Meeting[]
     if (active === NO_ACTIVE_MEETING) {
         if (!me?.administrator) return (
             <>
@@ -16,16 +16,22 @@ export default async function CurrentMeeting() {
             </>
         )
 
+        const not_finished = await db`
+            SELECT * FROM meetings
+            WHERE finished = FALSE
+            ORDER BY ROWID DESC
+        ` as Meeting[]
+
         return (
             <>
                 <Stripe>Current Meeting</Stripe>
                 <p className='mb-4'>No meeting is currently active.</p>
-                <NoActiveMeetingControls meetings={meetings} />
+                <NoActiveMeetingControls meetings={not_finished} />
             </>
         )
     }
 
-    const meeting = meetings.find(m => m.id === active)!
+    const meeting = await GetMeeting(active) ?? notFound()
     const nations = await GetAllNations()
     const participants = await db`SELECT nation FROM meeting_participants` as { nation: bigint }[]
     const enable_participation = await GetParticipationEnabled()
@@ -37,6 +43,7 @@ export default async function CurrentMeeting() {
             { enable_participation || me?.administrator ? <h2 className='mt-10 mb-6 text-center'>Participants</h2> : null }
             <ActiveMeetingControls
                 me={me}
+                meeting={meeting}
                 enable_participation={!!enable_participation}
                 participating={!!participants.find(p => p.nation === me?.represented_nation)}
             />

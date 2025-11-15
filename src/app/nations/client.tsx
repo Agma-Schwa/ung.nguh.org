@@ -2,7 +2,7 @@
 
 import {MemberProfile, NationProfile} from '@/api';
 import {Dialog, Select, useActionChecked} from '@/components-client';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {SetRepresentedNation} from '@/services';
 
 export function SelectRepresentedNationWidget({
@@ -12,11 +12,11 @@ export function SelectRepresentedNationWidget({
     me: MemberProfile,
     nations: NationProfile[]
 }) {
-    const [nation, setNation] = useState(nations[0].id)
+    const [nation, setNation] = useState<bigint>()
     const execute = useActionChecked(SetRepresentedNation)
-
+    useEffect(() => setNation(nations[0]?.id), [nations])
     function Confirm() {
-        if (nation === me.represented_nation) return
+        if (nation === undefined || nation === me.represented_nation) return
         execute({ nation_id: nation })
     }
 
@@ -24,7 +24,7 @@ export function SelectRepresentedNationWidget({
         {label: 'Confirm', action: Confirm},
         {label: 'Cancel'}
     ]}>
-        <Select onChange={v => setNation(BigInt(v))} defaultValue={String(nations[0].id)}>
+        <Select onChange={v => setNation(BigInt(v))}>
             {nations.map(n => <option key={n.id} value={String(n.id)}>
                 {n.name}
             </option>)}

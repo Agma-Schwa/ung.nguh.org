@@ -44,6 +44,7 @@ export function EditOrCreateMotionForm({
     function Submit() {
         submit({ type, title, text })
     }
+
     return (
         <>
             <ActionForm
@@ -75,10 +76,10 @@ export function EditOrCreateMotionForm({
 
 export function ScheduleMotionButton({
     motion,
-    meetings,
+    non_finished_meetings,
 }: {
     motion: Motion,
-    meetings: Meeting[],
+    non_finished_meetings: Meeting[],
 }) {
     const execute = useActionChecked(ScheduleMotion)
     const [id, setId] = useState<bigint>(0n);
@@ -99,7 +100,7 @@ export function ScheduleMotionButton({
             {label: 'Cancel'},
         ]}> <Select onChange={v => setId(BigInt(v))}>
                 <option value='0'>Clear</option>
-                {meetings.map(m => <option key={m.id} value={`${m.id}`}>{m.name}</option>)}
+                {non_finished_meetings.map(m => <option key={m.id} value={`${m.id}`}>{m.name}</option>)}
             </Select>
         </Dialog>
     </div>

@@ -7,7 +7,7 @@ import {Dialog} from '@/components-client';
 import {FormatMotionType, IsVotable} from '@/utils';
 
 export function GetMotionEmoji(m: Motion) {
-    if (m.supported || (m.passed && m.type !== MotionType.Constitutional)) return <IconTick />
+    if (m.supported || m.passed && m.type !== MotionType.Constitutional) return <IconTick />
     if (m.enabled) return <IconHourglass />
     if (m.closed) return <IconCross />
     if (m.locked) return <IconLock />
@@ -27,6 +27,7 @@ export async function MotionList({
     interactive?: boolean,
     hide_status?: boolean,
 }) {
+    const non_finished_meetings = meetings.filter(m => !m.finished)
     return (
         <div className={`grid ${hide_status ? 'grid-cols-[auto_1fr]' : 'grid-cols-[auto_1fr_auto]'} gap-3 items-center`}>
             {motions.map((motion) => {
@@ -49,8 +50,11 @@ export async function MotionList({
                             : meeting            ? `Sched. f. ${meeting.name}`
                                                  : 'Not Scheduled'
                         } </span>
-                        {interactive ? <ScheduleMotionButton motion={motion} meetings={meetings} /> : null}
-                    </div> : null }
+                        {interactive ? <ScheduleMotionButton
+                            motion={motion}
+                            non_finished_meetings={non_finished_meetings}
+                        /> : null}
+                    </div> : null}
                 </Fragment>
             })}
         </div>

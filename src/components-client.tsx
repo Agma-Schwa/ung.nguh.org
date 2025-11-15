@@ -165,12 +165,14 @@ export function Dialog({
     buttons,
     children,
     hide_open_button,
+    disabled,
 }: {
     ref?: RefObject<HTMLDialogElement | null>
     label: ReactNode,
     title?: ReactNode,
     children?: ReactNode,
     hide_open_button?: boolean,
+    disabled?: boolean,
     buttons: {
         label: ReactNode,
         disabled?: boolean,
@@ -183,7 +185,7 @@ export function Dialog({
     return (
         <>
             <div className={hide_open_button ? 'hidden' : ''}>
-                <Button onClick={() => dialog.current?.showModal()}>
+                <Button onClick={() => dialog.current?.showModal()} disabled={disabled}>
                     {label}
                 </Button>
             </div>
@@ -292,6 +294,7 @@ export function TextInput({
     onEnter,
     className,
     type,
+    placeholder,
 }: {
     ref?: RefObject<HTMLInputElement | null>
     initialValue?: string
@@ -299,10 +302,12 @@ export function TextInput({
     onEnter?: () => void,
     className?: string
     type?: string
+    placeholder?: string
 }) {
     return <input
         ref={ref}
         type={type ? type : 'text'}
+        placeholder={placeholder}
         defaultValue={initialValue}
         className={twMerge('border border-neutral-500 bg-neutral-700 px-1', className)}
         onChange={(event) => onChange(event.target.value)}

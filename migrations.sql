@@ -39,3 +39,9 @@ WHERE id = 1;
 --
 -- We’ve completely changed how this table works.
 DROP TABLE meeting_participants; -- Make sure to also run the new CREATE TABLE stmt from ung-schema.sql.
+
+-- MIGRATION
+--
+-- Add 'finished' state to meetings and apply it to the last meeting.
+ALTER TABLE meetings ADD COLUMN finished INTEGER NOT NULL DEFAULT FALSE;
+UPDATE meetings SET finished = TRUE WHERE id = 1;
