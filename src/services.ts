@@ -865,7 +865,7 @@ export async function CanEditNation(
     nation: NationProfile
 ): Promise<boolean> {
     try { await CheckHasEditAccessToNation(member, nation); return true }
-    catch (e: unknown) { return false }
+    catch (_: unknown) { return false }
 }
 
 export async function GetAdmissionOrThrow(id: bigint): Promise<Admission> {
@@ -950,7 +950,7 @@ export async function GetOwnDiscordProfile(
     if (!session?.discord_id) return null
 
     // Check the DB first.
-    let user = await GetMeImpl(session)
+    const user = await GetMeImpl(session)
     if (user) return user
 
     // If the member is not in the DB, ask the bot.

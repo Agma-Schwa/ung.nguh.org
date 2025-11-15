@@ -24,7 +24,7 @@ export default async function({
     params: Promise<{ id: string }>
 }) {
     const { id } = await params
-    try { BigInt(id); } catch (e) { notFound() }
+    try { BigInt(id); } catch (_) { notFound() }
     const me = await GetMe()
     const admission = await GetAdmissionOrThrow(BigInt(id))
     const votes = await db`SELECT * FROM admission_votes WHERE admission = ${admission.id}` as AdmissionVote[]

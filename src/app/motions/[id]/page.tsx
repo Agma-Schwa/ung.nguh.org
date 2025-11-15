@@ -59,7 +59,7 @@ export default async function({
     params: Promise<{ id: string }>
 }) {
     const { id } = await params
-    try { BigInt(id); } catch (e) { notFound() }
+    try { BigInt(id); } catch (_) { notFound() }
     const me = await GetMe()
     const motion = await GetMotionOrThrow(BigInt(id))
     const member = await GetMember(motion.author) ?? notFound()

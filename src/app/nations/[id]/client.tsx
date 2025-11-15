@@ -143,7 +143,7 @@ export function NationMemberList({
     nation: NationProfile,
     members: MemberProfile[]
 }) {
-    let members_sorted = useMemo(() => SortMembers(members), [members])
+    const members_sorted = useMemo(() => SortMembers(members), [members])
     const { confirm } = useConfirm()
     const execute = useActionChecked(RemoveMemberFromNation)
 

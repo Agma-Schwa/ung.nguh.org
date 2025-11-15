@@ -29,13 +29,17 @@ export default async function({
     const me = await GetMe()
 
     // Check if this user can edit or leave this ŋation.
-    let can_edit = me !== null && await CanEditNation(me, nation);
-    let can_leave = me !== null && members.find(nm => nm.discord_id === me.discord_id)
+    const can_edit = me !== null && await CanEditNation(me, nation);
+    const can_leave = me !== null && members.find(nm => nm.discord_id === me.discord_id)
     return (
         <>
             <Stripe>{nation.name}</Stripe>
             <div className='flex'>
-                <img src={URL.canParse(nation.banner_url ?? '') ? nation.banner_url! : null!} className='w-32 mx-auto'/>
+                <img
+                    src={URL.canParse(nation.banner_url ?? '') ? nation.banner_url! : null!}
+                    alt=''
+                    className='w-32 mx-auto'
+                />
             </div>
             {nation.observer && !nation.deleted ? <div className='flex justify-center text-2xl mt-8'>
                 <em>This ŋation is an observer ŋation</em>

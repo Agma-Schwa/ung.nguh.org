@@ -9,7 +9,7 @@ export default async function({
     params: Promise<{ id: string }>
 }) {
     const { id } = await params
-    try { BigInt(id); } catch (e) { notFound() }
+    try { BigInt(id); } catch (_) { notFound() }
     const meeting = await GetMeetingOrThrow(BigInt(id))
     const active = await GetActiveMeeting()
     if (meeting.id === active) redirect('/')

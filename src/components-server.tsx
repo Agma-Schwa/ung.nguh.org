@@ -1,5 +1,4 @@
 import {ReactNode} from 'react';
-import {twMerge} from 'tailwind-merge';
 
 export function SidebarSection({ title, children }: { title: string, children: ReactNode }) {
     return (

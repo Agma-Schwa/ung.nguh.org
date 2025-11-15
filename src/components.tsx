@@ -127,6 +127,7 @@ export function Nation({
                 <div className='relative'>
                     <img
                         src={URL.canParse(nation.banner_url ?? '') ? nation.banner_url! : null!}
+                        alt=''
                         className='
                             select-none rounded-[0_0_var(--width)_var(--width)]
                             w-(--width) min-w-(--width)
@@ -136,6 +137,7 @@ export function Nation({
                     />
                     {member ? <img
                         src={member.avatar_url}
+                        alt=''
                         className='
                             select-none absolute rounded-[50%]
                             w-[calc(var(--width)*.875)]

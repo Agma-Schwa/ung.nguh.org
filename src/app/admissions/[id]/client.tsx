@@ -5,7 +5,6 @@ import {Button, useActionChecked, useConfirm} from '@/components-client';
 import {useRouter} from 'next/navigation';
 import {VoteDialog} from '@/app/motions/motion';
 import {DeleteAdmission, PassAdmission, VoteAdmission} from '@/services';
-import toast from 'react-hot-toast';
 
 export function AdmissionControls({
     admission,
