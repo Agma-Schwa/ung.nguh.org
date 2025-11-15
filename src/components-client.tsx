@@ -190,7 +190,7 @@ export function Dialog({
                 </Button>
             </div>
             <dialog ref={dialog} className={`
-                absolute inset-1/2 -translate-1/2
+                fixed inset-1/2 -translate-1/2
                 w-[40ch] max-w-[60ch] text-white
                 open:flex flex-col bg-neutral-700
             `}>
