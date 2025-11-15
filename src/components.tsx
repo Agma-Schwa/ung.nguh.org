@@ -17,6 +17,10 @@ function Icon({ emoji, className }: { emoji: string, className?: string }) {
     </span>;
 }
 
+export function IconArrows({ className }: { className?: string }) {
+    return <Icon emoji='🗘' className={className} />
+}
+
 export function IconCross({ className }: { className?: string }) {
     return <Icon emoji='❌️' className={twMerge('ml-1.5', className)} />
 }

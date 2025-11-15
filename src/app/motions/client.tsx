@@ -14,6 +14,7 @@ import {Meeting, Motion, MotionType} from '@/api';
 import {ScheduleMotion} from '@/services';
 import {useState} from 'react';
 import {MarkdownText} from '@/app/motions/[id]/client';
+import {IconArrows} from '@/components';
 
 function MotionTypeToString(type: MotionType) {
     switch (type) {
@@ -93,7 +94,7 @@ export function ScheduleMotionButton({
     // Yes, we are duplicating this dialog for every open motion, but that’s
     // not that many so I candidly don’t care.
     return <div>
-        <Dialog label='🗘' title='Schedule Motion' buttons={[
+        <Dialog label={<IconArrows />} title='Schedule Motion' buttons={[
             {label: 'Ok', action: Schedule},
             {label: 'Cancel'},
         ]}> <Select onChange={v => setId(BigInt(v))}>
