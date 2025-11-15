@@ -1,7 +1,6 @@
 import {IconEye, IconHeadstone, Stripe} from '@/components';
-import {CanEditNation, db, GetAllMembers, GetMe, GetNation,} from '@/services';
+import {CanEditNation, GetAllMembers, GetMe, GetMembersOfNation, GetNation,} from '@/services';
 import {notFound} from 'next/navigation';
-import {MemberProfile} from '@/api';
 import {AddMemberDialog, DemoteControls, EditButton, LeaveDialog, NationMemberList} from '@/app/nations/[id]/client';
 
 export default async function({
@@ -14,11 +13,7 @@ export default async function({
     const nation = await GetNation(BigInt(id)) ?? notFound();
 
     // And its members.
-    const members = await db`
-        SELECT members.*, memberships.ruler FROM members
-        INNER JOIN memberships ON members.discord_id = memberships.member
-        WHERE memberships.nation = ${id}
-    ` as MemberProfile[]
+    const members = await GetMembersOfNation(nation.id)
 
     // As well as all members that are *not* in the nation; we need this for
     // the 'add member' dialog.

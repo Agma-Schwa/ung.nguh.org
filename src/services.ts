@@ -17,12 +17,13 @@ import {createSafeActionClient} from 'next-safe-action';
 import {z} from 'zod';
 import {revalidatePath} from 'next/cache';
 import {notFound} from 'next/navigation';
-import {AdmissionSchema, CanEditMotion, FormatMotionType, IsVotable, MotionSchema} from '@/utils';
+import {AdmissionSchema, CanEditMotion, FormatMotionType, IsVotable, MotionSchema, UnixTimestampSeconds} from '@/utils';
 
 // =============================================================================
 //  Globals and Types
 // =============================================================================
 const API_URL = 'http://localhost:25000'
+const MEMBER_UPDATE_INTERVAL_SECONDS = 60n * 60n * 6n
 
 export const db = new SQL({
     adapter: 'sqlite',
@@ -905,7 +906,8 @@ export async function GetActiveMeeting(): Promise<bigint> {
 }
 
 export async function GetAllMembers(): Promise<MemberProfile[]> {
-    return await db`SELECT * FROM members ORDER BY display_name COLLATE NOCASE` as MemberProfile[]
+    const members = await db`SELECT * FROM members ORDER BY display_name COLLATE NOCASE` as MemberProfile[]
+    return Promise.all(members.map(m => UpdateMember(m)))
 }
 
 export async function GetAllNations(): Promise<NationProfile[]> {
@@ -913,10 +915,22 @@ export async function GetAllNations(): Promise<NationProfile[]> {
 }
 
 export async function GetMember(id: bigint): Promise<MemberProfile | null> {
-    return One<MemberProfile>(db`
-        SELECT * FROM members WHERE 
+    const member = await One<MemberProfile>(db`
+        SELECT * FROM members WHERE
         discord_id = ${id} LIMIT 1
     `)
+
+    return UpdateMember(member)
+}
+
+export async function GetMembersOfNation(id: bigint): Promise<MemberProfile[]> {
+    const members = await db`
+        SELECT members.*, memberships.ruler FROM members
+        INNER JOIN memberships ON members.discord_id = memberships.member
+        WHERE memberships.nation = ${id}
+        ORDER BY members.display_name COLLATE NOCASE
+    ` as MemberProfile[]
+    return Promise.all(members.map(m => UpdateMember(m)))
 }
 
 export async function GetMeeting(id: bigint): Promise<Meeting | null> {
@@ -954,7 +968,18 @@ export async function GetOwnDiscordProfile(
     if (user) return user
 
     // If the member is not in the DB, ask the bot.
-    return GetMemberProfileFromDiscord(BigInt(session.discord_id))
+    const discord_id = BigInt(session.discord_id)
+    const partial = await GetMemberProfileFromDiscord(discord_id);
+    if (!partial) return null
+    return {
+        discord_id,
+        updated: UnixTimestampSeconds(),
+        represented_nation: null,
+        active: 1n,
+        administrator: 0n,
+        staff_only: 0n,
+        ...partial
+    } satisfies MemberProfile
 }
 
 export async function GetParticipationEnabled(): Promise<bigint> {
@@ -964,7 +989,7 @@ export async function GetParticipationEnabled(): Promise<bigint> {
     `)
 }
 
-async function GetMemberProfileFromDiscord(discord_id: bigint): Promise<MemberProfile | null> {
+async function GetMemberProfileFromDiscord(discord_id: bigint): Promise<PartialMemberProfile | null> {
     // Fetch the profile from discord if this user isn’t in the DB.
     const res = await fetch(`${API_URL}/profile`, {
         headers: {
@@ -974,15 +999,7 @@ async function GetMemberProfileFromDiscord(discord_id: bigint): Promise<MemberPr
     })
 
     if (!res.ok) return null
-    const partial = await res.json() as PartialMemberProfile
-    return {
-        discord_id,
-        represented_nation: null,
-        active: 1n,
-        administrator: 0n,
-        staff_only: 0n,
-        ...partial
-    } satisfies MemberProfile
+    return await res.json() as PartialMemberProfile
 }
 
 // This function is a bit more complicated because some non-members may edit admissions.
@@ -1005,10 +1022,6 @@ async function CheckIsNguhcrafter(): Promise<bigint> {
     if (!session?.discord_id) Unauthorised()
 
     // If they’re in the DB, they’re definitely a member.
-    //
-    // FIXME: We need some way to ban users since we no longer check whether someone
-    //        is a server member on *every* request. Ideally, the bot should just update our
-    //        database directly, but for now, we can also do this manually.
     if (await GetMeImpl(session)) return BigInt(session.discord_id)
 
     // Ask the bot.
@@ -1096,7 +1109,6 @@ async function PassAdmissionImpl(admission: Admission) {
             `<@${admission.discord_id}>’s ŋation [**${admission.name}**](<${process.env.BASE_URL}/nations/${nation_id}>) has been admitted!`
         )
     })
-
 }
 
 function RevalidateAdmission(admission: Admission) {
@@ -1146,6 +1158,46 @@ async function SetParticipationEnabled(tx: Bun.SQL, enable: boolean) {
         SET value = ${enable}
         WHERE id = ${GlobalVar.AllowMembersToJoinTheActiveMeeting}
     `
+}
+
+async function UpdateMember<T extends MemberProfile | null>(member: T): Promise<T> {
+    // Return the object as-is if the member is inactive.
+    if (!member || !member.active) return member
+
+    // Don’t do this in dev mode since we don’t have access to the right server.
+    if (process.env.NODE_ENV === 'development') return member
+
+    // Update the profile if the update interval has elapsed.
+    const now = UnixTimestampSeconds();
+    if (now - member.updated > MEMBER_UPDATE_INTERVAL_SECONDS) {
+        const partial = await GetMemberProfileFromDiscord(member.discord_id)
+
+        // If something goes wrong here, assume the member has been banned; we
+        // can always unban them manually. Also update the object that we’re about
+        // to return (we don’t update the 'updated' field because it’s only used here).
+        if (!partial) {
+            member.active = 0n
+            await db`
+                UPDATE members
+                SET active = FALSE, updated = ${now}
+                WHERE discord_id = ${member.discord_id}
+            `
+        } else {
+            member.display_name = partial.display_name
+            member.avatar_url = partial.avatar_url
+            await db`
+                UPDATE members
+                SET display_name = ${partial.display_name},
+                    avatar_url = ${partial.avatar_url},
+                    updated = ${now}
+                WHERE discord_id = ${member.discord_id}
+            `
+        }
+
+        console.log("HERE", member)
+    }
+
+    return member
 }
 
 async function UpdateMotionAfterVote(tx: Bun.SQL, motion: Motion) {

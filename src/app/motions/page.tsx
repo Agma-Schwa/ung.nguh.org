@@ -1,14 +1,14 @@
 import {Stripe} from '@/components';
-import {db, GetMe} from '@/services';
-import {Meeting, MemberProfile, Motion} from '@/api';
+import {db, GetAllMembers, GetMe} from '@/services';
+import {Meeting, Motion} from '@/api';
 import {MotionList} from '@/app/motions/motion';
 import {IsVotable} from '@/utils';
 
 export default async function() {
     const me = await GetMe()
     const motions = await db`SELECT * FROM motions` as Motion[]
-    const members = await db`SELECT * FROM members` as MemberProfile[]
     const meetings = await db`SELECT * FROM meetings` as Meeting[]
+    const members = await GetAllMembers()
     const active = motions.filter(m => IsVotable(m) && m.enabled)
     const open = motions.filter(m => IsVotable(m) && !m.enabled)
     const closed = motions.filter(m => !IsVotable(m))

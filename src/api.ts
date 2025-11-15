@@ -30,6 +30,7 @@ export type PartialMember = {
  */
 export type MemberProfile = PartialMember & {
     represented_nation: bigint | null;
+    updated: bigint;
     active: bool;
     administrator: bool;
     staff_only: bool;

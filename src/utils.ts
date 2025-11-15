@@ -51,3 +51,7 @@ export function SortMembers(members: readonly MemberProfile[]): MemberProfile[] 
         return name1.localeCompare(name2)
     })
 }
+
+export function UnixTimestampSeconds() {
+    return BigInt(Math.floor(new Date().getTime() / 1000));
+}
