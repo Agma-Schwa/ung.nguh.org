@@ -1,9 +1,10 @@
 import {Member, Stripe, Votes} from '@/components';
 import {db, GetActiveMeeting, GetMe, GetMeeting, GetMember, GetMotionOrThrow} from '@/services';
 import {notFound} from 'next/navigation';
-import {FormatMotionType, GetMotionEmoji} from '@/app/motions/motion';
+import {GetMotionEmoji} from '@/app/motions/motion';
 import {Motion, MotionType, Vote} from '@/api';
 import {MarkdownText, MotionButtons} from '@/app/motions/[id]/client';
+import {FormatMotionType} from '@/utils';
 
 function FormatMotionStatus(motion: Motion) {
     if (!motion.passed)
@@ -33,7 +34,7 @@ export default async function({
             <Stripe>
                 #{motion.id}:
                 <span className=''> {motion.title}</span>
-                <span className='[font-variant:small-caps] text-neutral-300'> [{FormatMotionType(motion)}]</span>
+                <span className='[font-variant:small-caps] text-neutral-300'> [{FormatMotionType(motion.type)}]</span>
                 <span>{GetMotionEmoji(motion)}</span>
             </Stripe>
             <div className='flex justify-center mt-8'>

@@ -17,7 +17,7 @@ import {createSafeActionClient} from 'next-safe-action';
 import {z} from 'zod';
 import {revalidatePath} from 'next/cache';
 import {notFound} from 'next/navigation';
-import {AdmissionSchema, CanEditMotion, IsVotable, MotionSchema} from '@/utils';
+import {AdmissionSchema, CanEditMotion, FormatMotionType, IsVotable, MotionSchema} from '@/utils';
 
 // =============================================================================
 //  Globals and Types
@@ -236,6 +236,11 @@ export const CreateMotion = ActionClient.inputSchema(
         SET meeting = ${active}
         WHERE id = ${id}
     `
+
+    await SendWebhookMessage(
+        `<@${me.discord_id}> has proposed a new motion: [**${title} [${FormatMotionType(type).toUpperCase()}]**](<${process.env.BASE_URL}/motions/${id}>)!`,
+        false
+    )
 
     revalidatePath('/motions')
     return { id }
@@ -1060,19 +1065,23 @@ function RevalidateMotion(motion: Motion) {
 }
 
 async function SendWebhookMessage(content: string, ping = false) {
-    const res = await fetch(process.env.WEBHOOK_URL!, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            content: `${ping ? `<@&${process.env.UNG_ROLE_ID}> ` : ''}${content}`
+    try {
+        const res = await fetch(process.env.WEBHOOK_URL!, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                content: `${ping ? `<@&${process.env.UNG_ROLE_ID}> ` : ''}${content}`
+            })
         })
-    })
 
-    if (!res.ok) console.error(
-        'Could not send webhook message:',
-        res.status,
-        await res.text()
-    )
+        if (!res.ok) console.error(
+            'Could not send webhook message:',
+            res.status,
+            await res.text()
+        )
+    } catch (e) {
+        console.error('Error sending webhook message:', e)
+    }
 }
 
 async function UpdateMotionAfterVote(tx: Bun.TransactionSQL, motion: Motion) {

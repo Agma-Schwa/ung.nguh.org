@@ -1,20 +1,10 @@
-import {Meeting, MemberProfile, Motion, MotionType, Vote} from '@/api';
+import {Meeting, MemberProfile, Motion, MotionType} from '@/api';
 import {IconCross, IconHourglass, IconLock, IconTick, Member} from '@/components';
 import Link from 'next/link';
 import {Fragment} from 'react';
 import {ScheduleMotionButton} from '@/app/motions/client';
 import {Dialog} from '@/components-client';
-import {IsVotable} from '@/utils';
-
-export function FormatMotionType(motion: Motion) {
-    switch (motion.type) {
-        case MotionType.Constitutional: return 'cons'
-        case MotionType.Executive: return 'exec'
-        case MotionType.Legislative: return 'leg'
-        case MotionType.Unsure: return 'unsure'
-        default: return 'invalid'
-    }
-}
+import {FormatMotionType, IsVotable} from '@/utils';
 
 export function GetMotionEmoji(m: Motion) {
     if (m.supported || (m.passed && m.type !== MotionType.Constitutional)) return <IconTick />
@@ -42,7 +32,7 @@ export async function MotionList({
             {motions.map((motion) => {
                 const member = members.find(m => m.discord_id === motion.author)!
                 const meeting = meetings.find(m => m.id === motion.meeting)
-                const type = FormatMotionType(motion)
+                const type = FormatMotionType(motion.type)
                 return <Fragment key={motion.id}>
                     <div><Member member={member}/></div>
                     <div><Link href={`/motions/${motion.id}`}>

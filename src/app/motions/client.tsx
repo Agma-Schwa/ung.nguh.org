@@ -66,9 +66,9 @@ export function EditOrCreateMotionForm({
                     <TextArea className='field-sizing-content min-h-[20rem]' initialValue={text} onChange={e => setText(e)} />
                 </Label>
             </ActionForm>
-            {preview ? <>
+            {preview ? <div className='mt-8'>
                 <MarkdownText text={text} />
-            </> : null}
+            </div> : null}
         </>
     )
 }

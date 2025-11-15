@@ -26,6 +26,16 @@ export function CanEditMotion(
     return motion.author === member.discord_id
 }
 
+export function FormatMotionType(type: MotionType) {
+    switch (type) {
+        case MotionType.Constitutional: return 'cons'
+        case MotionType.Executive: return 'exec'
+        case MotionType.Legislative: return 'leg'
+        case MotionType.Unsure: return 'unsure'
+        default: return 'invalid'
+    }
+}
+
 /** Whether a motion can be voted on. */
 export function IsVotable(m: Motion) {
     return !m.closed || (m.type === MotionType.Constitutional && m.passed && !m.supported)
