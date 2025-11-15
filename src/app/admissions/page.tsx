@@ -12,7 +12,7 @@ function Admissions({
     return <div className='grid gap-4 grid-cols-[auto_1fr] mt-2'>
         {admissions.map(a => <Fragment key={a.id}>
             <Link href={`/admissions/${a.id}`}>
-                <Nation nation={a} member={a} />
+                <Nation nation={a} member={a} link={false} />
             </Link>
             <div className='text-ell-nowrap'>
                 {a.trivia || <em>(No description provided)</em>}

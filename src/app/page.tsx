@@ -49,7 +49,11 @@ export default async function CurrentMeeting() {
             />
 
             <div className='flex flex-col gap-4'>
-                {participants.map(p => <Nation key={p.nation} nation={nations.find(n => n.id === p.nation)!} />)}
+                {participants.map(p => <Nation
+                    key={p.nation}
+                    nation={nations.find(n => n.id === p.nation)!}
+                    link={true}
+                />)}
             </div>
         </>
     )

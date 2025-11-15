@@ -12,7 +12,12 @@ function List({
 }) {
     return (
         <div className='flex flex-col gap-6 mb-12 ml-2'>
-            {nations.map(n => <Nation key={n.id} nation={n} starred={me?.represented_nation === n.id} />)}
+            {nations.map(n => <Nation
+                key={n.id}
+                nation={n}
+                starred={me?.represented_nation === n.id}
+                link={true}
+            />)}
         </div>
     )
 }

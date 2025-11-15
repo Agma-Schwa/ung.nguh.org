@@ -111,49 +111,65 @@ export function Member({
     )
 }
 
+function NationImpl({
+    nation,
+    member,
+}: {
+    nation: NationPartial,
+    member?: PartialMember | null,
+}) {
+    return <>
+        <div className='relative'>
+            <img
+                src={URL.canParse(nation.banner_url ?? '') ? nation.banner_url! : null!}
+                alt=''
+                className='
+                    select-none rounded-[0_0_var(--width)_var(--width)]
+                    w-(--width) min-w-(--width)
+                    h-(--height) min-h-(--height)
+                    [outline:1px_solid] outline-neutral-500
+                '
+            />
+            {member ? <img
+                src={member.avatar_url}
+                alt=''
+                className='
+                    select-none absolute rounded-[50%]
+                    w-[calc(var(--width)*.875)]
+                    bottom-[calc(var(--width)*.1)]
+                    left-[calc(var(--width)*.06)]
+                '
+            /> : null}
+        </div>
+        <span className='
+            [font-variant:small-caps] text-2xl ml-1
+        '>
+            <span className={`select-none text-ell-nowrap ${nation.deleted ? 'line-through text-neutral-500' : ''}`}>
+                {nation.name}
+            </span>
+        </span>
+    </>
+}
 /** A ŋation. */
 export function Nation({
     nation,
     member,
     starred,
+    link,
 }: {
     nation: NationPartial,
     member?: PartialMember | null,
     starred?: boolean | null
+    link: boolean
 }) {
     return (
         <div className='flex [--width:1.25rem] [--height:calc(var(--width)*2)] items-center'>
-            <Link href={`/nations/${nation.id}`} className='flex gap-2 items-center'>
-                <div className='relative'>
-                    <img
-                        src={URL.canParse(nation.banner_url ?? '') ? nation.banner_url! : null!}
-                        alt=''
-                        className='
-                            select-none rounded-[0_0_var(--width)_var(--width)]
-                            w-(--width) min-w-(--width)
-                            h-(--height) min-h-(--height)
-                            [outline:1px_solid] outline-neutral-500
-                        '
-                    />
-                    {member ? <img
-                        src={member.avatar_url}
-                        alt=''
-                        className='
-                            select-none absolute rounded-[50%]
-                            w-[calc(var(--width)*.875)]
-                            bottom-[calc(var(--width)*.1)]
-                            left-[calc(var(--width)*.06)]
-                        '
-                    /> : null}
-                </div>
-                <span className='
-                    [font-variant:small-caps] text-2xl ml-1
-                '>
-                    <span className={`select-none text-ell-nowrap ${nation.deleted ? 'line-through text-neutral-500' : ''}`}>
-                        {nation.name}
-                    </span>
-                </span>
-            </Link>
+            {link ? <Link href={`/nations/${nation.id}`} className='flex gap-2 items-center'>
+                <NationImpl nation={nation} member={member} />
+            </Link> : <div className='flex gap-2 items-center'>
+                <NationImpl nation={nation} member={member} />
+            </div>}
+
             {nation.observer && !nation.deleted ? <IconEye /> : null}
             {nation.deleted ? <IconHeadstone /> : null}
             {starred ? <IconStar /> : null}
@@ -198,6 +214,7 @@ export async function Votes({
                 <Nation
                     nation={nations.find(n => n.id === v.nation)!}
                     member={members.find(m => m.discord_id === v.member)}
+                    link={true}
                 />
                 <div className='-ml-14'>{v.vote ? '✅' : '❌'}</div>
             </Fragment>)}
