@@ -22,22 +22,25 @@ function List({
     )
 }
 
-async function GetMyNationIds(me: MemberProfile | null): Promise<{ nation: bigint }[]> {
+async function GetMyNations(me: MemberProfile | null): Promise<NationProfile[]> {
     if (!me) return []
-    return db`SELECT nation FROM memberships WHERE member = ${me.discord_id}`;
+    return db`
+        SELECT nations.* FROM nations
+        JOIN memberships ON memberships.nation = nations.id
+        WHERE memberships.member = ${me.discord_id} AND nations.deleted = FALSE
+    `;
 }
 
 export default async function() {
     const me = await GetMe()
     const all_nations = await db`SELECT * FROM nations ORDER BY name COLLATE NOCASE` as NationProfile[]
-    const my_nation_ids = await GetMyNationIds(me)
+    const deleted = all_nations.filter(n => n.deleted)
     const not_deleted = all_nations.filter(n => !n.deleted)
-    const visible = me?.administrator ? all_nations : not_deleted
-    const my_nations = my_nation_ids.map(my => visible.find(n => n.id === my.nation)!).filter(n => !n.deleted)
-    const other_nations = visible.filter(n => !my_nations.includes(n) && !n.deleted)
-    const num_deleted = all_nations.length - not_deleted.length
-    const num_observer = visible.filter(n => n.observer).length
-    const num_active = all_nations.length - num_deleted - num_observer
+    const my_nations = await GetMyNations(me)
+    const other_nations = not_deleted.filter(n => !my_nations.find(m => m.id === n.id))
+    const num_deleted = deleted.length
+    const num_observer = not_deleted.filter(n => n.observer).length
+    const num_active = not_deleted.length - num_observer
     return (
         <>
             <Stripe>Ŋations</Stripe>
@@ -47,7 +50,7 @@ export default async function() {
                     Observer Ŋations: {num_observer}
                     {me?.administrator ? `, Deleted Ŋations: ${num_deleted}` : ''}
                 </p>
-                {!me ? <List nations={visible} /> : <div>
+                {!me ? <List nations={not_deleted} /> : <div>
                     {my_nations.length !== 0 ? <>
                         <h3 className='mb-6'>My Ŋations</h3>
                         {my_nations.filter(n => !n.observer).length > 1 ? <div className='mb-6'>
@@ -59,7 +62,7 @@ export default async function() {
                     <List nations={other_nations} />
                     {me.administrator ? <>
                         <h3 className='mb-6'>Deleted Ŋations</h3>
-                        <List nations={all_nations.filter(n => n.deleted)} />
+                        <List nations={deleted} />
                     </> : null}
                 </div>}
             </div>

@@ -513,14 +513,16 @@ export const RemoveMemberFromNation = ActionClient.inputSchema(z.object({
             WHERE nation = ${nation.id} AND ruler = TRUE
         `)
 
-
         if (rulers === 0n) {
-            // This may return nothing if this nation is out of members.
             const random_member = await One<{ member: bigint }>(tx`
                 SELECT member FROM memberships WHERE nation = ${nation.id} LIMIT 1
             `)
 
-            if (random_member?.member) {
+            // This may return nothing if this ŋation is out of members; demote the
+            // ŋation to an observer ŋation in that case.
+            if (!random_member?.member) {
+                await tx`UPDATE nations SET observer = TRUE WHERE id = ${nation.id}`
+            } else {
                 await tx`
                     UPDATE memberships SET ruler = TRUE
                     WHERE nation = ${nation.id} AND member = ${random_member.member}
@@ -951,7 +953,6 @@ async function GetNationCountForQuorum(sql: Bun.SQL): Promise<bigint> {
     return Scalar(sql`
         SELECT COUNT(*) AS value FROM (
             SELECT 1 FROM nations
-            INNER JOIN memberships ON memberships.nation = nations.id
             WHERE nations.deleted = FALSE AND nations.observer = FALSE
             GROUP BY nations.id
         )
