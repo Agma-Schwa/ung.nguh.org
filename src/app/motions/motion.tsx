@@ -38,7 +38,7 @@ export async function MotionList({
     hide_status?: boolean,
 }) {
     return (
-        <div className={`grid ${hide_status ? 'grid-cols-[auto_1fr]' : 'grid-cols-[auto_1fr_auto]'} gap-4 leading-8`}>
+        <div className={`grid ${hide_status ? 'grid-cols-[auto_1fr]' : 'grid-cols-[auto_1fr_auto]'} gap-3 items-center`}>
             {motions.map((motion) => {
                 const member = members.find(m => m.discord_id === motion.author)!
                 const meeting = meetings.find(m => m.id === motion.meeting)

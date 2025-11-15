@@ -41,6 +41,10 @@ export function IconHourglass({ className }: { className?: string }) {
     return <Icon emoji='⏳' className={twMerge('ml-1', className)} />
 }
 
+export function IconGhost({ className }: { className?: string }) {
+    return <img src='/ghost.svg' className={twMerge('h-7 w-7', className)} alt='Banned user' />
+}
+
 export function IconLock({ className }: { className?: string }) {
     return <Icon emoji='🔒' className={twMerge('ml-1', className)} />
 }
@@ -90,15 +94,14 @@ export function Member({
     member: MemberProfile
 }) {
     return (
-        <div className='flex gap-2 text-2xl'>
+        <div className='flex flex-row items-center gap-2 text-2xl'>
             <MemberAvatar member={member} />
-            <div className='leading-8'>
-                <span className={`select-none text-ell-nowrap ${member.active ? '' : 'line-through text-neutral-500'}`}>
-                    {member.display_name}
-                </span>
-            </div>
+            <span className={`select-none text-ell-nowrap ${member.active ? '' : 'line-through text-neutral-500'}`}>
+                {member.display_name}
+            </span>
             {member.administrator ? <IconShield /> : null}
             {member.ruler ? <IconCrown /> : null}
+            {!member.active ? <IconGhost /> : null}
         </div>
     )
 }
@@ -114,7 +117,7 @@ export function Nation({
     starred?: boolean | null
 }) {
     return (
-        <div className='flex gap-2 [--width:1.25rem] [--height:calc(var(--width)*2)]'>
+        <div className='flex gap-2 [--width:1.25rem] [--height:calc(var(--width)*2)] items-center'>
             <div className='relative'>
                 <img
                     src={URL.canParse(nation.banner_url ?? '') ? nation.banner_url! : null!}
@@ -136,7 +139,7 @@ export function Nation({
                 /> : null}
             </div>
             <span className='
-                [font-variant:small-caps] h-(--height) leading-(--height) text-2xl ml-1
+                [font-variant:small-caps] text-2xl ml-1
             '>
                 <span className={`select-none text-ell-nowrap ${nation.deleted ? 'line-through text-neutral-500' : ''}`}>
                     {nation.name}
@@ -181,7 +184,7 @@ export async function Votes({
             Noes: {votes.length - ayes.length}
             {quorum ? `, Quorum: ${quorum}` : null}
         </p>
-        <div className='grid gap-y-4 gap-x-16 leading-8 mt-4 items-center grid-cols-[auto_1fr]'>
+        <div className='grid gap-y-4 gap-x-16 mt-4 items-center grid-cols-[auto_1fr]'>
             {votes.map(v => <Fragment key={v.nation}>
                 <Nation
                     nation={nations.find(n => n.id === v.nation)!}

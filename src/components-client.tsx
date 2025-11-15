@@ -189,17 +189,17 @@ export function Dialog({
             </div>
             <dialog ref={dialog} className={`
                 absolute inset-1/2 -translate-1/2
-                w-[40ch] max-w-[60ch] min-h-[10rem] text-white
+                w-[40ch] max-w-[60ch] text-white
                 open:flex flex-col bg-neutral-700
             `}>
                 <div className='w-full text-(size:--text-size) text-center bg-neutral-600 select-none'>
                     {title ?? label}
                 </div>
                 <div className='flex flex-col h-full'>
-                    <div className='p-2 flex flex-col h-full w-full'>
+                    <div className='p-2 flex flex-col min-h-[5rem] h-full w-full'>
                         {children}
                     </div>
-                    <div className='flex flex-row mt-auto justify-around mb-3'>
+                    <div className='flex justify-self-end flex-row mt-auto justify-around mb-3'>
                         {buttons.map(({ label, disabled, action, className }, index) => <div key={index}>
                             <Button
                                 className={twMerge('bg-neutral-600 hover:bg-neutral-500 min-w-[7ch]', className ?? '')}

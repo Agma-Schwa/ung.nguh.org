@@ -68,9 +68,9 @@ async function Sidebar() {
                         ? <div className='m-auto w-full'>
                             {/* Don’t reuse <Member> here and format it manually so
                                 we can stop the name from overflowing */}
-                            <div className='flex justify-center w-full pl-2 gap-2 text-2xl'>
+                            <div className='flex justify-center items-center w-full pl-2 gap-2 text-2xl'>
                                 <MemberAvatar member={profile} />
-                                <div className='leading-8 select-none text-ell-nowrap'>
+                                <div className='select-none text-ell-nowrap'>
                                     {profile.display_name}
                                 </div>
                                 {profile.administrator ? <IconShield /> : null}

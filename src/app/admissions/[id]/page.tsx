@@ -36,13 +36,11 @@ export default async function({
                 {admission.ruler.length !== 0 ? <div className='text-2xl'>
                     <em>ruled by</em> <span className='[font-variant:small-caps]'> {admission.ruler}</span>
                 </div> : null}
-                <div className='flex gap-2 text-2xl mb-4'>
+                <div className='flex items-center gap-2 text-2xl mb-4'>
                     <MemberAvatar member={admission} />
-                    <div className='leading-8'>
-                        <span className={`select-none`}>
-                            {admission.display_name}
-                        </span>
-                    </div>
+                    <span className={`select-none`}>
+                        {admission.display_name}
+                    </span>
                 </div>
                 <NationBannerFullSize bannerURL={admission.banner_url} />
             </div>
