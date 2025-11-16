@@ -70,7 +70,7 @@ export function IconTick({ className }: { className?: string }) {
 export function Stripe({ children }: { children: ReactNode }) {
     return (
         <div>
-            <h2 className='text-center mt-10 mb-6 select-none'>{children}</h2>
+            <h2 className='text-center mt-10 mb-6'>{children}</h2>
         </div>
     )
 }
@@ -144,7 +144,7 @@ function NationImpl({
         <span className='
             [font-variant:small-caps] text-2xl ml-1
         '>
-            <span className={`select-none text-ell-nowrap ${nation.deleted ? 'line-through text-neutral-500' : ''}`}>
+            <span className={`text-ell-nowrap ${nation.deleted ? 'line-through text-neutral-500' : ''}`}>
                 {nation.name}
             </span>
         </span>
