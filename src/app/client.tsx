@@ -6,7 +6,8 @@ import {useEffect, useState} from 'react';
 import {
     ClearParticipants,
     CreateMeeting,
-    EnableOrDisableMeetingParticipation, FinishMeeting,
+    EnableOrDisableMeetingParticipation,
+    FinishMeeting,
     JoinOrLeaveMeeting,
     SetActiveMeeting
 } from '@/services';
@@ -34,7 +35,7 @@ export function NoActiveMeetingControls({
         <div className='grid grid-cols-[auto_auto] w-fit gap-6'>
             { meetings.length !== 0 ? <>
                 <Button onClick={SetActive}>Set Active Meeting</Button>
-                <Select onChange={e => setActive(BigInt(e))} className='min-w-60'>
+                <Select onChange={e => setActive(BigInt(e))} value={String(active) ?? meetings[0].id} className='min-w-60'>
                     { meetings.map(m => <option value={String(m.id)} key={m.id}>
                         Meeting {m.name}
                     </option>) }

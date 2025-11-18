@@ -123,7 +123,7 @@ export type Meeting = {
 }
 
 /** Used to indicate that there is no active meeting. */
-export const NO_ACTIVE_MEETING: bigint = 0n
+export const NO_ACTIVE_MEETING = 0n as const
 
 export type VoteCommon = {
     member: bigint;

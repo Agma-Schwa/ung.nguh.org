@@ -1,7 +1,7 @@
 'use client'
 
 import {Button, Dialog, Select, useActionChecked, useConfirm} from '@/components-client';
-import {ClosureReason, MemberProfile, Motion, MotionType} from '@/api';
+import {ClosureReason, MemberProfile, Motion} from '@/api';
 import {useRouter} from 'next/navigation';
 import {
     CloseMotion,
@@ -14,8 +14,7 @@ import {
 import Markdown from 'react-markdown';
 import {VoteDialog} from '@/app/motions/motion';
 import {IsVotable} from '@/utils';
-import {useEffect, useState} from 'react';
-import toast from 'react-hot-toast';
+import {useState} from 'react';
 
 function FormatClosureReason(reason: ClosureReason) {
     switch (reason) {

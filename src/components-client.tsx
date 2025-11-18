@@ -256,20 +256,17 @@ export function Label({
 export function Select({
     className,
     onChange,
-    defaultValue,
     value,
     children,
 }: {
     className?: string
     onChange: (e: string) => void,
-    defaultValue?: string,
-    value?: string,
+    value: string,
     children: ReactNode,
 }) {
     return <select
         className={twMerge('border border-neutral-500 bg-neutral-700 pl-1', className)}
         onChange={(e) => onChange(e.target.value)}
-        defaultValue={defaultValue}
         value={value}
     >{children}</select>
 }

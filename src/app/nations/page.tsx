@@ -37,6 +37,7 @@ export default async function() {
     const deleted = all_nations.filter(n => n.deleted)
     const not_deleted = all_nations.filter(n => !n.deleted)
     const my_nations = await GetMyNations(me)
+    const my_non_observer_nations = my_nations.filter(n => !n.observer)
     const other_nations = not_deleted.filter(n => !my_nations.find(m => m.id === n.id))
     const num_deleted = deleted.length
     const num_observer = not_deleted.filter(n => n.observer).length
@@ -53,8 +54,8 @@ export default async function() {
                 {!me ? <List nations={not_deleted} /> : <div>
                     {my_nations.length !== 0 ? <>
                         <h3 className='mb-6'>My Ŋations</h3>
-                        {my_nations.filter(n => !n.observer).length > 1 ? <div className='mb-6'>
-                            <SelectRepresentedNationWidget me={me} nations={my_nations} />
+                        {my_non_observer_nations.length > 1 ? <div className='mb-6'>
+                            <SelectRepresentedNationWidget me={me} nations={my_non_observer_nations} />
                         </div> : null}
                         <List nations={my_nations} me={me} />
                         <h3 className='mb-6'>Other Ŋations</h3>

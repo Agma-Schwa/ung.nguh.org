@@ -12,9 +12,9 @@ export function SelectRepresentedNationWidget({
     me: MemberProfile,
     nations: NationProfile[]
 }) {
-    const [nation, setNation] = useState<bigint>()
+    const [nation, setNation] = useState<bigint>(nations[0].id)
     const execute = useActionChecked(SetRepresentedNation)
-    useEffect(() => setNation(nations[0]?.id), [nations])
+    useEffect(() => setNation(nations[0].id), [nations])
     function Confirm() {
         if (nation === undefined || nation === me.represented_nation) return
         execute({ nation_id: nation })
@@ -24,7 +24,7 @@ export function SelectRepresentedNationWidget({
         {label: 'Confirm', action: Confirm},
         {label: 'Cancel'}
     ]}>
-        <Select onChange={v => setNation(BigInt(v))}>
+        <Select onChange={v => setNation(BigInt(v))} value={String(nation)}>
             {nations.map(n => <option key={n.id} value={String(n.id)}>
                 {n.name}
             </option>)}

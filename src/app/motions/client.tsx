@@ -10,9 +10,9 @@ import {
     TextArea,
     useActionChecked
 } from '@/components-client';
-import {Meeting, Motion, MotionType} from '@/api';
+import {Meeting, Motion, MotionType, NO_ACTIVE_MEETING} from '@/api';
 import {ScheduleMotion} from '@/services';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {MarkdownText} from '@/app/motions/[id]/client';
 import {IconArrows} from '@/components';
 
@@ -37,12 +37,18 @@ export function EditOrCreateMotionForm({
     returnTo: string,
     isPending?: boolean
 }) {
-    const [type, setType] = useState<MotionType>(motion?.type ?? MotionType.Unsure)
-    const [title, setTitle] = useState<string>(motion?.title ?? '')
-    const [text, setText] = useState<string>(motion?.text ?? '')
+    const [type, setType] = useState<MotionType>(MotionType.Unsure)
+    const [title, setTitle] = useState<string>('')
+    const [text, setText] = useState<string>('')
     const [preview, setPreview] = useState<boolean>(false)
+    useEffect(() => {
+        if (!motion) return
+        setType(motion.type)
+        setTitle(motion.title)
+        setText(motion.text)
+    }, [motion])
     function Submit() {
-        submit({ type, title, text })
+        if (type && title && text) submit({ type, title, text })
     }
 
     return (
@@ -56,7 +62,7 @@ export function EditOrCreateMotionForm({
                 </Button>}
             >
                 <Label label='Type'>
-                    <Select defaultValue={String(type)} onChange={v => setType(BigInt(v) as MotionType)}>
+                    <Select value={String(type)} onChange={v => setType(BigInt(v) as MotionType)}>
                         {Object.values(MotionType).map(t => <option key={t} value={String(t)}>
                             {MotionTypeToString(t)}
                         </option>)}
@@ -82,8 +88,7 @@ export function ScheduleMotionButton({
     non_finished_meetings: Meeting[],
 }) {
     const execute = useActionChecked(ScheduleMotion)
-    const [id, setId] = useState<bigint>(0n);
-
+    const [id, setId] = useState<bigint>(NO_ACTIVE_MEETING);
     function Schedule() {
         if (motion.meeting === id) return
         execute({
@@ -98,8 +103,8 @@ export function ScheduleMotionButton({
         <Dialog label={<IconArrows />} title='Schedule Motion' buttons={[
             {label: 'Ok', action: Schedule},
             {label: 'Cancel'},
-        ]}> <Select onChange={v => setId(BigInt(v))}>
-                <option value='0'>Clear</option>
+        ]}> <Select onChange={v => setId(BigInt(v))} value={String(id)}>
+                <option value={String(NO_ACTIVE_MEETING)}>Clear</option>
                 {non_finished_meetings.map(m => <option key={m.id} value={`${m.id}`}>{m.name}</option>)}
             </Select>
         </Dialog>

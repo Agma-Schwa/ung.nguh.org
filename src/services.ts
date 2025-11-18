@@ -862,6 +862,7 @@ async function GetNationForVote(member: MemberProfile): Promise<NationProfile> {
     if (!member.represented_nation) Forbidden('You need to choose a represented ŋation to vote')
     const nation = await GetNation(member.represented_nation) ?? InternalServerError();
     await CheckHasVoteAccessToNation(member, nation);
+    if (nation.observer) Forbidden('Observer ŋations cannot vote or join meetings!')
     return nation
 }
 
