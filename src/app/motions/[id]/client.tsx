@@ -1,10 +1,10 @@
 'use client'
 
-import {Button, useActionChecked, useConfirm} from '@/components-client';
-import {MemberProfile, Motion} from '@/api';
+import {Button, Dialog, Select, useActionChecked, useConfirm} from '@/components-client';
+import {ClosureReason, MemberProfile, Motion, MotionType} from '@/api';
 import {useRouter} from 'next/navigation';
 import {
-    CloseMotionAsRejected,
+    CloseMotion,
     DeleteMotion,
     EnableOrDisableMotion,
     LockOrUnlockMotion,
@@ -14,6 +14,19 @@ import {
 import Markdown from 'react-markdown';
 import {VoteDialog} from '@/app/motions/motion';
 import {IsVotable} from '@/utils';
+import {useEffect, useState} from 'react';
+import toast from 'react-hot-toast';
+
+function FormatClosureReason(reason: ClosureReason) {
+    switch (reason) {
+        case ClosureReason.Passed: return 'Passed'
+        case ClosureReason.RejectedByVote: return 'Rejected'
+        case ClosureReason.RejectedNotSeconded: return 'Not Seconded'
+        case ClosureReason.RejectedAgainstServerRules: return 'Against Server Rules'
+        case ClosureReason.RejectedImproper: return 'Improper Procedure/Wording'
+        case ClosureReason.RejectedNoConsensusReachedAfter7Days: return 'No Consensus'
+    }
+}
 
 export function MotionButtons({
     me,
@@ -28,17 +41,26 @@ export function MotionButtons({
 }) {
     const router = useRouter()
     const { confirm } = useConfirm()
-    const close_motion_as_rejected = useActionChecked(CloseMotionAsRejected)
+    const close_motion = useActionChecked(CloseMotion)
     const delete_motion = useActionChecked(DeleteMotion)
     const enable_or_disable = useActionChecked(EnableOrDisableMotion)
     const lock_or_unlock = useActionChecked(LockOrUnlockMotion)
     const reset_motion = useActionChecked(ResetMotion)
     const vote_motion = useActionChecked(VoteMotion)
+    const [reason, setReason] = useState<ClosureReason>(ClosureReason.RejectedByVote)
     const can_edit = me?.administrator || (me?.discord_id === motion.author && !motion.locked)
 
-    async function CloseAsRejected() {
-        if (await confirm("Close this motion as rejected?"))
-            close_motion_as_rejected({ motion_id: motion.id })
+    async function Close() {
+        if (motion.closed && motion.reason === reason) return
+
+        // Only prompt the user if the motion isn’t closed yet.
+        if (
+            motion.closed ||
+            await confirm(`Close this motion with reason '${FormatClosureReason(reason)}'?`)
+        ) close_motion({
+            motion_id: motion.id,
+            reason
+        })
     }
 
     async function Delete() {
@@ -93,10 +115,24 @@ export function MotionButtons({
             </Button> : null }
             { active_meeting === motion.meeting && motion.locked && !motion.closed && me?.administrator ?
                 <Button onClick={EnableOrDisable}> {motion.enabled ? 'Disable' : 'Enable'} Voting</Button> : null }
+            { me?.administrator ? <Dialog
+                label={IsVotable(motion) ? 'Close as Rejected' : 'Adjust Rejection Reason'}
+                danger={!motion.closed}
+                buttons={[
+                    {label: 'Confirm', action: () => Close()},
+                    {label: 'Cancel'}
+                ]}>
+                <Select onChange={v => setReason(BigInt(v) as ClosureReason)} value={String(reason)} className={`
+                    ${reason === ClosureReason.Passed ? 'bg-green-800' : 'bg-rose-700'}
+                `}> {Object.values(ClosureReason).filter(r => r != ClosureReason.Passed)
+                        .map(reason => <option key={reason} value={String(reason)} className='bg-rose-700'>
+                            {FormatClosureReason(reason)}
+                        </option>)
+                    }
+                </Select>
+            </Dialog> : null }
             { me?.administrator && (has_votes || motion.closed || motion.enabled) ?
                 <Button onClick={Reset} danger={true}>Reset</Button> : null}
-            { me?.administrator && IsVotable(motion) ? <Button onClick={CloseAsRejected} danger={true}>
-                Close as Rejected</Button> : null }
             { can_edit && !motion.locked ? <Button onClick={Delete} danger={true}>Delete</Button> : null}
         </div>
     )

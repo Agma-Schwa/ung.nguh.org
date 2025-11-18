@@ -1,4 +1,4 @@
-import {MemberProfile, Motion, MotionType} from '@/api';
+import {ClosureReason, MemberProfile, Motion, MotionType} from '@/api';
 import {z} from 'zod';
 
 export const AdmissionSchema = z.object({
@@ -12,10 +12,12 @@ export const AdmissionSchema = z.object({
 })
 
 export const MotionSchema = z.object({
-    type: z.literal([MotionType.Unsure, MotionType.Legislative, MotionType.Executive, MotionType.Constitutional]),
+    type: z.literal(Object.values(MotionType)),
     title: z.string().trim().min(1).max(500),
     text: z.string().trim().min(1).max(10000),
 })
+
+export const ClosureReasonSchema = z.literal(Object.values(ClosureReason))
 
 export function CanEditMotion(
     member: MemberProfile,
@@ -38,7 +40,11 @@ export function FormatMotionType(type: MotionType) {
 
 /** Whether a motion can be voted on. */
 export function IsVotable(m: Motion) {
-    return !m.closed || (m.type === MotionType.Constitutional && m.passed && !m.supported)
+    return !m.closed || (
+        m.type === MotionType.Constitutional &&
+        m.reason === ClosureReason.Passed &&
+        !m.supported
+    )
 }
 
 export function SortMembers(members: readonly MemberProfile[]): MemberProfile[] {

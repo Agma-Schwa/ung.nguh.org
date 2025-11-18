@@ -2,19 +2,33 @@ import {Member, Stripe, Votes} from '@/components';
 import {db, GetActiveMeeting, GetMe, GetMeeting, GetMember, GetMotionOrThrow} from '@/services';
 import {notFound} from 'next/navigation';
 import {GetMotionEmoji} from '@/app/motions/motion';
-import {Meeting, MemberProfile, Motion, MotionType, Vote} from '@/api';
+import {ClosureReason, Meeting, MemberProfile, Motion, MotionType, Vote} from '@/api';
 import {MarkdownText, MotionButtons} from '@/app/motions/[id]/client';
 import {FormatMotionType} from '@/utils';
 import {ScheduleMotionButton} from '@/app/motions/client';
 
 function FormatMotionResult(motion: Motion) {
-    if (!motion.passed)
-        return <p className='mt-4 text-rose-400'><strong>REJECTED</strong></p>
-    if (motion.type != MotionType.Constitutional)
-        return <p className='mt-4 text-emerald-400'><strong>PASSED</strong></p>
-    if (motion.supported)
-        return <p className='mt-4 text-emerald-400'><strong>SUPPORTED</strong></p>
-    return <p className='mt-4 text-amber-200'><strong>PASSED ON CONDITION OF SUPPORT</strong></p>
+    if (motion.reason === ClosureReason.Passed) {
+        if (motion.type !== MotionType.Constitutional)
+            return <p className='mt-4 text-emerald-400'><strong>PASSED</strong></p>
+        if (motion.supported)
+            return <p className='mt-4 text-emerald-400'><strong>SUPPORTED</strong></p>
+        return <p className='mt-4 text-amber-200'><strong>PASSED ON CONDITION OF SUPPORT</strong></p>
+    }
+
+    function GetRejectionString() {
+        switch (motion.reason) {
+            case ClosureReason.RejectedByVote: return 'REJECTED'
+            case ClosureReason.RejectedNotSeconded: return 'REJECTED (NOT SECONDED)'
+            case ClosureReason.RejectedAgainstServerRules: return 'REJECTED (AGAINST SERVER RULES)'
+            case ClosureReason.RejectedImproper: return 'REJECTED (IMPROPER PROCEDURE OR WORDING)'
+            case ClosureReason.RejectedNoConsensusReachedAfter7Days:
+                if (motion.type === MotionType.Constitutional) return 'REJECTED (NOT SUPPORTED)'
+                return 'REJECTED (NO CONSENSUS)'
+        }
+    }
+
+    return <p className='mt-4 text-rose-400'><strong>{GetRejectionString()}</strong></p>
 }
 
 async function RescheduleMotionButton({

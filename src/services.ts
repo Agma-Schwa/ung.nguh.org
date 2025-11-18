@@ -1,7 +1,7 @@
 'use server'
 
 import {
-    Admission,
+    Admission, ClosureReason,
     GlobalVar,
     Meeting,
     MemberProfile,
@@ -17,7 +17,10 @@ import {createSafeActionClient} from 'next-safe-action';
 import {z} from 'zod';
 import {revalidatePath} from 'next/cache';
 import {notFound} from 'next/navigation';
-import {AdmissionSchema, CanEditMotion, FormatMotionType, IsVotable, MotionSchema, UnixTimestampSeconds} from '@/utils';
+import {
+    AdmissionSchema, CanEditMotion,
+    ClosureReasonSchema, FormatMotionType, IsVotable, MotionSchema, UnixTimestampSeconds
+} from '@/utils';
 
 // =============================================================================
 //  Globals and Types
@@ -112,23 +115,20 @@ export const ClearParticipants = ActionClient.inputSchema(z.object({})).action(W
     revalidatePath('/')
 }))
 
-/** Close a motion as rejected. */
-export const CloseMotionAsRejected = ActionClient.inputSchema(z.object({
+/** Close a motion. */
+export const CloseMotion = ActionClient.inputSchema(z.object({
     motion_id: z.bigint(),
-})).action(Wrap(async ({ parsedInput: { motion_id } }) => {
+    reason: ClosureReasonSchema
+})).action(Wrap(async ({ parsedInput: { motion_id, reason } }) => {
     const me = await GetLoggedInMemberOrThrow()
     const motion = await GetMotionOrThrow(motion_id)
     if (!me.administrator) Forbidden()
 
-    await db`
-        UPDATE motions
-        SET enabled = FALSE,
-            supported = FALSE,
-            passed = FALSE,
-            closed = TRUE
-        WHERE id = ${motion.id}
-    `
+    // Disallow passing motions as this should only be used for rejections.
+    if (reason === ClosureReason.Passed)
+        Forbidden('A motion cannot be passed this way!')
 
+    await CloseMotionImpl(db, motion, reason)
     RevalidateMotion(motion)
 }))
 
@@ -572,7 +572,7 @@ export const ResetMotion = ActionClient.inputSchema(z.object({
                 quorum = 0,
                 supported = FALSE,
                 closed = FALSE,
-                passed = FALSE
+                reason = 0
             WHERE id = ${motion.id}
         `
     })
@@ -1116,6 +1116,16 @@ async function ClearParticipantsImpl(tx: Bun.SQL) {
     return tx`DELETE FROM meeting_participants`
 }
 
+async function CloseMotionImpl(tx: Bun.SQL, motion: Motion, reason: ClosureReason) {
+    await tx`
+        UPDATE motions
+        SET closed = TRUE,
+            enabled = ${motion.type === MotionType.Constitutional && reason === ClosureReason.Passed},
+            reason = ${reason}
+        WHERE id = ${motion.id}
+    `
+}
+
 async function PassAdmissionImpl(admission: Admission) {
     await db.begin(async tx => {
         const affected = await AffectedRows(tx`
@@ -1268,13 +1278,11 @@ async function UpdateMotionAfterVote(tx: Bun.SQL, motion: Motion) {
 
         // Close it and disable it unless it is a constitutional motion; constitutional
         // motions are disabled when constitutional support is reached.
-        if (passed || rejected) await tx`
-            UPDATE motions
-            SET closed = TRUE,
-                enabled = ${is_constitutional && !rejected},
-                passed = ${passed}
-            WHERE id = ${motion.id}
-        `
+        if (passed || rejected) await CloseMotionImpl(
+            tx,
+            motion,
+            passed ? ClosureReason.Passed : ClosureReason.RejectedByVote
+        )
 
         // No need to check for constitutional support if it hasn't even passed.
         if (!passed) return

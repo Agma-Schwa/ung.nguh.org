@@ -1,4 +1,4 @@
-import {Meeting, MemberProfile, Motion, MotionType} from '@/api';
+import {ClosureReason, Meeting, MemberProfile, Motion, MotionType} from '@/api';
 import {IconCross, IconHourglass, IconLock, IconTick, Member} from '@/components';
 import Link from 'next/link';
 import {Fragment} from 'react';
@@ -7,7 +7,7 @@ import {Dialog} from '@/components-client';
 import {FormatMotionType, IsVotable} from '@/utils';
 
 export function GetMotionEmoji(m: Motion) {
-    if (m.supported || m.passed && m.type !== MotionType.Constitutional) return <IconTick />
+    if (m.supported || m.reason === ClosureReason.Passed && m.type !== MotionType.Constitutional) return <IconTick />
     if (m.enabled) return <IconHourglass />
     if (m.closed) return <IconCross />
     if (m.locked) return <IconLock />

@@ -166,6 +166,7 @@ export function Dialog({
     children,
     hide_open_button,
     disabled,
+    danger,
 }: {
     ref?: RefObject<HTMLDialogElement | null>
     label: ReactNode,
@@ -173,6 +174,7 @@ export function Dialog({
     children?: ReactNode,
     hide_open_button?: boolean,
     disabled?: boolean,
+    danger?: boolean,
     buttons: {
         label: ReactNode,
         disabled?: boolean,
@@ -185,7 +187,7 @@ export function Dialog({
     return (
         <>
             <div className={hide_open_button ? 'hidden' : ''}>
-                <Button onClick={() => dialog.current?.showModal()} disabled={disabled}>
+                <Button onClick={() => dialog.current?.showModal()} disabled={disabled} danger={danger}>
                     {label}
                 </Button>
             </div>
@@ -255,17 +257,20 @@ export function Select({
     className,
     onChange,
     defaultValue,
+    value,
     children,
 }: {
     className?: string
     onChange: (e: string) => void,
     defaultValue?: string,
+    value?: string,
     children: ReactNode,
 }) {
     return <select
         className={twMerge('border border-neutral-500 bg-neutral-700 pl-1', className)}
         onChange={(e) => onChange(e.target.value)}
         defaultValue={defaultValue}
+        value={value}
     >{children}</select>
 }
 

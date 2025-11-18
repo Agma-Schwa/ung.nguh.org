@@ -61,8 +61,8 @@ CREATE TABLE IF NOT EXISTS motions (
     -- If this is a constitutional motion, whether we have constitutional support.
     supported INTEGER NOT NULL DEFAULT FALSE,
 
-    -- Whether this motion has passed.
-    passed INTEGER NOT NULL DEFAULT FALSE,
+    -- The status of this motion (see ClosureReason); only valid if 'closed' is TRUE.
+    reason INTEGER NOT NULL DEFAULT 0,
 
     -- Whether this motion is closed, a closed motion's outcome cannot be changed.
     closed INTEGER NOT NULL DEFAULT FALSE,

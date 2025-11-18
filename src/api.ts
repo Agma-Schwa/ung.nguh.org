@@ -74,7 +74,7 @@ export const MotionType = {
     Constitutional: 3n
 } as const
 
-export type MotionType = 0n | 1n | 2n | 3n
+export type MotionType = typeof MotionType[keyof typeof MotionType];
 
 /** Persistent global variables. */
 export const GlobalVar = {
@@ -84,6 +84,18 @@ export const GlobalVar = {
     /** Whether members can join the active meeting. */
     AllowMembersToJoinTheActiveMeeting: 1n,
 } as const
+
+/** Reason why a motion was closed. */
+export const ClosureReason = {
+    RejectedByVote: 0n,
+    Passed: 1n,
+    RejectedNotSeconded: 2n,
+    RejectedNoConsensusReachedAfter7Days: 3n,
+    RejectedAgainstServerRules: 4n,
+    RejectedImproper: 5n,
+} as const
+
+export type ClosureReason = typeof ClosureReason[keyof typeof ClosureReason];
 
 /**
  * UŊ Motion.
@@ -99,7 +111,7 @@ export type Motion = {
   locked: bool;
   closed: bool;
   supported: bool;
-  passed: bool;
+  reason: ClosureReason; // Only valid if 'closed' is true.
   enabled: bool;
 };
 
