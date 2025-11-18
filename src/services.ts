@@ -79,20 +79,19 @@ export const AddMemberToNation = ActionClient.inputSchema(z.object({
     if (member.staff_only) BadRequest('Cannot add this user to a nation')
 
     // Add them.
-    const res = await db`
+    const affected = await AffectedRows(db`
         INSERT OR IGNORE INTO memberships (member, nation, ruler) 
         VALUES (${member.discord_id}, ${nation.id}, ${ruler})
         ON CONFLICT (member, nation)
         DO UPDATE SET ruler = ${ruler}
         WHERE ruler != ${ruler}
-        RETURNING member
-    `
+    `)
 
     // If this changed something, and this member has no selected nation to represent,
     // set this ŋation as the selected ŋation, but only if the nation is not an observer
     // nation since those can’t vote in the first place.
     if (
-        res.count &&
+        affected &&
         !nation.observer &&
         !nation.deleted &&
         !member.represented_nation
@@ -366,12 +365,9 @@ export const EnableOrDisableMotion = ActionClient.inputSchema(z.object({
     // Do it.
     if (enable) {
         await db.transaction(async tx => {
-            // 15.6: ‘A quorum of ¼ of members (rounded up) MUST be present in a meeting to pass any motion.’
-            const participants = await Scalar(tx`SELECT COUNT(*) AS value FROM meeting_participants`)
-            const quorum = Math.max(Number(participants), Math.ceil(Number(await GetNationCountForQuorum(tx)) / 4))
             await tx`
                 UPDATE motions
-                SET enabled = TRUE, quorum = ${quorum}
+                SET enabled = TRUE, quorum = (SELECT COUNT(*) FROM meeting_participants)
                 WHERE id = ${motion.id} AND meeting = ${motion.meeting}
             `
         })
@@ -418,6 +414,7 @@ export const FinishMeeting = ActionClient.inputSchema(z.object({})).action(Wrap(
         `
     })
 
+    // TODO: If there are any enabled motions left, ping everyone to vote on them.
     await SendWebhookMessage(`Meeting ${meeting.name} has concluded`)
     revalidatePath('/')
     revalidatePath('/meetings')
@@ -432,8 +429,34 @@ export const JoinOrLeaveMeeting = ActionClient.inputSchema(z.object({
     const active = await GetActiveMeeting()
     await GetMeetingOrThrow(active) // Just ensure there is one.
     if (!await GetParticipationEnabled()) Forbidden("Participation is currently disabled")
-    if (!join) await db`DELETE FROM meeting_participants WHERE nation = ${nation.id}`
-    else await db`INSERT OR IGNORE INTO meeting_participants (nation) VALUES (${nation.id})`
+    await db.transaction(async tx => {
+        // Add the member.
+        if (!join) {
+            if (!await AffectedRows(tx`
+                DELETE FROM meeting_participants WHERE nation = ${nation.id}
+            `)) return
+        } else {
+            if (!await AffectedRows(tx`
+                INSERT OR IGNORE INTO meeting_participants (nation)
+                VALUES (${nation.id})
+            `)) return
+        }
+
+        // If this changed something, adjust the quorum for any currently enabled motions
+        // that this member nation has not voted on.
+        await tx`
+            UPDATE motions
+            SET quorum = quorum + ${join ? 1n : -1n}
+            WHERE closed = FALSE AND
+                  enabled = TRUE AND
+                  meeting = ${active} AND
+                  ${nation.id} NOT IN (
+                SELECT nation FROM votes
+                WHERE motion = motions.id
+            )
+        `
+    })
+
     revalidatePath('/')
 }))
 
@@ -486,16 +509,15 @@ export const RemoveMemberFromNation = ActionClient.inputSchema(z.object({
 
     // Remove the member.
     await db.begin(async tx => {
-        const res = await tx`
+        const affected = await AffectedRows(tx`
             DELETE FROM memberships 
             WHERE member = ${member.discord_id} 
             AND nation = ${nation.id}
-            RETURNING member
-        `
+        `)
 
         // It’s possible for this to fail if two people attempt to remove
         // the same member at the same time; give up.
-        if (res.count === 0) return
+        if (!affected) return
 
         // Ok, we removed them as a member. If this is this member’s current
         // main nation, remove it.
@@ -724,14 +746,14 @@ export const VoteAdmission = ActionClient.inputSchema(z.object({
 
     // Record the vote.
     await db.transaction(async tx => {
-        const res = await tx`
+        const affected = await AffectedRows(tx`
             INSERT OR IGNORE INTO admission_votes (admission, member, nation, vote)
             VALUES (${admission.id}, ${me.discord_id}, ${nation.id}, ${vote})
             ON CONFLICT (admission, nation)
             DO UPDATE SET member = ${me.discord_id}, vote = ${vote}
-            RETURNING ROWID -- Return the rowid to check if something changed
-        `
-        if (res.length === 0) return
+        `)
+
+        if (!affected) return
 
         // We need to check if this causes the admission to pass; the way this works
         // is basically like constitutional support, except that it requires 50% of
@@ -759,10 +781,30 @@ export const VoteMotion = ActionClient.inputSchema(z.object({
     const motion = await GetMotionOrThrow(motion_id)
 
     // Only enabled motions can be voted on.
-    if (!motion.enabled || !IsVotable(motion)) Forbidden()
+    if (!motion.enabled || !IsVotable(motion)) {
+        // If the motion is closed, it’s likely that someone’s vote just passed
+        // or rejected it; don’t error in that case and just reload the page.
+        if (motion.closed) {
+            RevalidateMotion(motion)
+            return
+        }
+
+        Forbidden()
+    }
 
     // A user must have registered an active ŋation before they can vote.
     const nation = await GetNationForVote(me)
+
+    // If the meeting that the motion is scheduled for is active, then a member
+    // can only vote if they are a meeting participant.
+    if (await GetActiveMeeting() === motion.meeting) {
+        const participant = await Scalar(db`
+            SELECT COUNT(*) AS value FROM meeting_participants
+            WHERE nation = ${nation.id}
+        `)
+
+        if (participant === 0n) Forbidden('You must join the meeting before you can vote!')
+    }
 
     // Record the vote.
     await db.transaction(async tx => {
@@ -776,7 +818,7 @@ export const VoteMotion = ActionClient.inputSchema(z.object({
         await UpdateMotionAfterVote(tx, motion)
     })
 
-    revalidatePath(`/motions/${motion.id}`)
+    RevalidateMotion(motion)
 }))
 
 // This abomination of a function compensates for the fact that NextJS is
@@ -1047,6 +1089,11 @@ export async function GetMeImpl(session: Session | null): Promise<MemberProfile 
     return GetMember(BigInt(session.discord_id))
 }
 
+export async function AffectedRows(query: SQL.Query<any>): Promise<bigint> {
+    const res = await query
+    return res.count
+}
+
 export async function One<T>(query: SQL.Query<any>): Promise<T | null> {
     const res = await query
     if (res.length > 1) throw Error("Expected at most one row")
@@ -1071,15 +1118,14 @@ async function ClearParticipantsImpl(tx: Bun.SQL) {
 
 async function PassAdmissionImpl(admission: Admission) {
     await db.begin(async tx => {
-        const result = await tx`
+        const affected = await AffectedRows(tx`
             UPDATE admissions
             SET passed = TRUE, closed = TRUE
-            WHERE id = ${admission.id} AND closed = FALSE -- The AND clause is necessary to correctly query the affected rows.
-            RETURNING ROWID -- Returning the rowid is a hack; this will return no rows if there were no changes 
-        `
+            WHERE id = ${admission.id} AND closed = FALSE -- The AND clause is necessary to correctly query the affected rows. 
+        `)
 
         // If this didn’t do anything, stop here so we don’t add a ŋation twice.
-        if (result.length === 0) return
+        if (!affected) return
 
         // Add the ŋation.
         const nation_id = await Scalar(tx`
