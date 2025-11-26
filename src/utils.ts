@@ -38,15 +38,6 @@ export function FormatMotionType(type: MotionType) {
     }
 }
 
-/** Whether a motion can be voted on. */
-export function IsVotable(m: Motion) {
-    return !m.closed || (
-        m.type === MotionType.Constitutional &&
-        m.reason === ClosureReason.Passed &&
-        !m.supported
-    )
-}
-
 export function SortMembers(members: readonly MemberProfile[]): MemberProfile[] {
     return members.toSorted((m1, m2) => {
         // Put rulers first, then administrators, then other members by name.

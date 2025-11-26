@@ -19,7 +19,7 @@ import {revalidatePath} from 'next/cache';
 import {notFound} from 'next/navigation';
 import {
     AdmissionSchema, CanEditMotion,
-    ClosureReasonSchema, FormatMotionType, IsVotable, MotionSchema, UnixTimestampSeconds
+    ClosureReasonSchema, FormatMotionType, MotionSchema, UnixTimestampSeconds
 } from '@/utils';
 
 // =============================================================================
@@ -781,7 +781,7 @@ export const VoteMotion = ActionClient.inputSchema(z.object({
     const motion = await GetMotionOrThrow(motion_id)
 
     // Only enabled motions can be voted on.
-    if (!motion.enabled || !IsVotable(motion)) {
+    if (!motion.enabled) {
         // If the motion is closed, it’s likely that someone’s vote just passed
         // or rejected it; don’t error in that case and just reload the page.
         if (motion.closed) {

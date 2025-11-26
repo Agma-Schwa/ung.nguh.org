@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {Fragment} from 'react';
 import {ScheduleMotionButton} from '@/app/motions/client';
 import {Dialog} from '@/components-client';
-import {FormatMotionType, IsVotable} from '@/utils';
+import {FormatMotionType} from '@/utils';
 
 export function GetMotionEmoji(m: Motion) {
     if (m.supported || m.reason === ClosureReason.Passed && m.type !== MotionType.Constitutional) return <IconTick />
@@ -37,7 +37,7 @@ export async function MotionList({
                 return <Fragment key={motion.id}>
                     <div><Member member={member}/></div>
                     <div><Link href={`/motions/${motion.id}`}>
-                        <span className={`${!IsVotable(motion) ? 'line-through text-neutral-500' : ''}`}>
+                        <span className={`${motion.closed && !motion.enabled ? 'line-through text-neutral-500' : ''}`}>
                             {motion.title}
                         </span>
                         <span className='[font-variant:small-caps] text-neutral-300'> [{type}]</span>
@@ -45,10 +45,10 @@ export async function MotionList({
                     </Link></div>
                     {!hide_status ? <div className='flex gap-2 justify-end'>
                         <span> {
-                              !IsVotable(motion) ? 'Closed'
-                            : motion.enabled     ? 'Active'
-                            : meeting            ? `Sched. f. ${meeting.name}`
-                                                 : 'Not Scheduled'
+                              motion.closed && !motion.enabled ? 'Closed'
+                            : motion.enabled                   ? 'Active'
+                            : meeting                          ? `Sched. f. ${meeting.name}`
+                                                               : 'Not Scheduled'
                         } </span>
                         {interactive ? <ScheduleMotionButton
                             motion={motion}

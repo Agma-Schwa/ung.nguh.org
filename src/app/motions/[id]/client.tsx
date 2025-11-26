@@ -13,7 +13,6 @@ import {
 } from '@/services';
 import Markdown from 'react-markdown';
 import {VoteDialog} from '@/app/motions/motion';
-import {IsVotable} from '@/utils';
 import {useState} from 'react';
 import remarkGfm from 'remark-gfm';
 import remarkIns from "remark-ins";
@@ -117,8 +116,8 @@ export function MotionButtons({
             { active_meeting === motion.meeting && motion.locked && !motion.closed && me?.administrator ?
                 <Button onClick={EnableOrDisable}> {motion.enabled ? 'Disable' : 'Enable'} Voting</Button> : null }
             { me?.administrator ? <Dialog
-                label={IsVotable(motion) ? 'Close as Rejected' : 'Adjust Rejection Reason'}
-                danger={!motion.closed}
+                label={!motion.closed || motion.enabled ? 'Close as Rejected' : 'Adjust Rejection Reason'}
+                danger={!motion.closed || !!motion.enabled}
                 buttons={[
                     {label: 'Confirm', action: () => Close()},
                     {label: 'Cancel'}
