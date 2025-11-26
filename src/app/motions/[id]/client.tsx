@@ -15,6 +15,8 @@ import Markdown from 'react-markdown';
 import {VoteDialog} from '@/app/motions/motion';
 import {IsVotable} from '@/utils';
 import {useState} from 'react';
+import remarkGfm from 'remark-gfm';
+import remarkIns from "remark-ins";
 
 function FormatClosureReason(reason: ClosureReason) {
     switch (reason) {
@@ -151,5 +153,12 @@ export function MarkdownText({
         [&_a]:after:inline-block
         [&_a]:after:translate-y-1
         [&_a]:after:pl-[.125rem]
-    '><Markdown>{text}</Markdown></div>
+        [&_del]:text-red-400
+        [&_ins]:text-green-400
+        [&_ins]:no-underline
+    '>
+        <Markdown remarkPlugins={[remarkGfm, remarkIns]}>
+            {text}
+        </Markdown>
+    </div>
 }
